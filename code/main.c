@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdarg.h>
-
+#include <math.h>
 
 #include "blisp.h"
 

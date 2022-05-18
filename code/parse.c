@@ -4,7 +4,8 @@ typedef enum TokenType {
     TOKEN_LPAREN,
     TOKEN_RPAREN,
     TOKEN_SYMBOL,
-    TOKEN_NUMBER,
+    TOKEN_INTEGER,
+    TOKEN_FLOAT,
     TOKEN_QUOTE,
     TOKEN_COMMA,
     TOKEN_DOT,
@@ -14,7 +15,8 @@ struct Token typedef Token;
 struct Token {
     TokenType type;
     char *str;
-    i64 num;
+    i64 i;
+    f64 flt;
 };
 
 struct Parser typedef Parser;
@@ -121,7 +123,8 @@ bool lex_match_digit(Parser *p)
 }
 
 #define token_type(p)      ((p)->last_token.type)
-#define token_num_value(p) ((p)->last_token.num)
+#define token_int_value(p) ((p)->last_token.i)
+#define token_flt_value(p) ((p)->last_token.flt)
 #define token_str_value(p) ((p)->last_token.str)
 
 char *lex_read_literal(Parser *p)
@@ -144,41 +147,27 @@ char *lex_read_literal(Parser *p)
 void lex_literal(Parser *p)
 {
     char *lit = lex_read_literal(p);
+    char *end = lit;
 
-    bool is_number = true;
-    {
-        i64 sign = 1;
-        i64 value = 0;
-        char *str = lit;
-        if(*str == '-') {
-            ++str;
-            sign = -1;
+    // Try parsing an integer
+    i64 ivalue = strtoll(lit, &end, 10);
+    assert(errno != ERANGE);
+    if(*end != 0) {
+        // Try parsing a float
+        f64 fvalue = strtod(lit, &end);
+        assert(fvalue != HUGE_VAL);
+        if(*end != 0) {
+            // Parse it as a literal
+            token_type(p) = TOKEN_SYMBOL;
+            token_str_value(p) = lit;
+            return;
         }
-        i64 ndigits = 0;
-        for(;*str != 0; ++str) {
-            char c = *str;
-            if(!is_digit_char(c)) {
-                is_number = false;
-                break;
-            }
-            i64 digit = char_digit_value(c);
-            value = 10*value + digit;
-            ++ndigits;
-        }
-        if(ndigits == 0) {
-            is_number = false;
-        }
-        else {
-            value *= sign;
-            token_type(p) = TOKEN_NUMBER;
-            token_num_value(p) = value;
-        }
+        token_type(p) = TOKEN_FLOAT;
+        token_flt_value(p) = fvalue;
+        return;
     }
-
-    if(!is_number) {
-        token_type(p) = TOKEN_SYMBOL;
-        token_str_value(p) = lit;
-    }
+    token_type(p) = TOKEN_INTEGER;
+    token_int_value(p) = ivalue;
 }
 
 void parse_next_token(Parser *p)
@@ -215,7 +204,8 @@ void parse_next_token(Parser *p)
 #define token_is_dot(p)    (token_type(p) == TOKEN_DOT)
 #define token_is_lparen(p) (token_type(p) == TOKEN_LPAREN)
 #define token_is_rparen(p) (token_type(p) == TOKEN_RPAREN)
-#define token_is_num(p)    (token_type(p) == TOKEN_NUMBER)
+#define token_is_int(p)    (token_type(p) == TOKEN_INTEGER)
+#define token_is_flt(p)    (token_type(p) == TOKEN_FLOAT)
 #define token_is_sym(p)    (token_type(p) == TOKEN_SYMBOL)
 
 bool token_match(Parser *p, TokenType t)
@@ -260,8 +250,13 @@ Expr *parse_expr(Parser *p)
         }
         return list;
     }
-    else if(token_is_num(p)) {
-        Expr *expr = make_int(token_num_value(p));
+    else if(token_is_int(p)) {
+        Expr *expr = make_int(token_int_value(p));
+        parse_next_token(p);
+        return expr;
+    }
+    else if(token_is_flt(p)) {
+        Expr *expr = make_flt(token_flt_value(p));
         parse_next_token(p);
         return expr;
     }

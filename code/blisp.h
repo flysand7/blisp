@@ -3,7 +3,9 @@
 #define BLISP_H
 
 uint64_t typedef u64;
-int64_t typedef  i64;
+int64_t  typedef i64;
+float    typedef f32;
+double   typedef f64;
 
 #define until(p) while(!(p))
 #define repeat   do
@@ -19,6 +21,7 @@ typedef enum ExprKind {
     EXPR_PAIR,
     EXPR_SYM,
     EXPR_INT,
+    EXPR_FLT,
     EXPR_FUNC,
     EXPR_CLOSURE,
 } ExprKind;
@@ -31,6 +34,7 @@ struct Expr {
         struct{ Expr *car, *cdr; };
         char *str;
         i64   i;
+        f64   f;
         Func *bin;
     };
 };
@@ -45,8 +49,11 @@ struct Pair {
 
 // Numbers
 static Expr *make_int(i64 value);
+static Expr *make_flt(f64 value);
 #define      val_int(e) ((e)->i)
+#define      val_flt(e) ((e)->f)
 #define      is_int(e) (kind(e) == EXPR_INT)
+#define      is_flt(e) (kind(e) == EXPR_FLT)
 
 // Booleans
 static Expr *make_bool(bool b);
