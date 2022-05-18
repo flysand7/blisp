@@ -6,6 +6,8 @@ typedef enum TokenType {
     TOKEN_SYMBOL,
     TOKEN_NUMBER,
     TOKEN_QUOTE,
+    TOKEN_COMMA,
+    TOKEN_DOT,
 } TokenType;
 
 struct Token typedef Token;
@@ -194,6 +196,12 @@ void parse_next_token(Parser *p)
     else if(lex_match(p, '\'')) {
         token_type(p) = TOKEN_QUOTE;
     }
+    else if(lex_match(p, ',')) {
+        token_type(p) = TOKEN_COMMA;
+    }
+    else if(lex_match(p, '.')) {
+        token_type(p) = TOKEN_DOT;
+    }
     else if(lex_is_eof(p)) {
         token_type(p) = TOKEN_EOF;
     }
@@ -203,6 +211,8 @@ void parse_next_token(Parser *p)
 }
 
 #define token_is_quote(p)  (token_type(p) == TOKEN_QUOTE)
+#define token_is_comma(p)  (token_type(p) == TOKEN_COMMA)
+#define token_is_dot(p)    (token_type(p) == TOKEN_DOT)
 #define token_is_lparen(p) (token_type(p) == TOKEN_LPAREN)
 #define token_is_rparen(p) (token_type(p) == TOKEN_RPAREN)
 #define token_is_num(p)    (token_type(p) == TOKEN_NUMBER)
@@ -219,6 +229,8 @@ bool token_match(Parser *p, TokenType t)
 }
 
 #define token_match_quote(p)  token_match(p, TOKEN_QUOTE)
+#define token_match_comma(p)  token_match(p, TOKEN_COMMA)
+#define token_match_dot(p)    token_match(p, TOKEN_DOT)
 #define token_match_lparen(p) token_match(p, TOKEN_LPAREN)
 #define token_match_rparen(p) token_match(p, TOKEN_RPAREN)
 
@@ -234,12 +246,22 @@ Expr *parse_expr(Parser *p)
         Expr *list = nil;
         until(token_match_rparen(p)) {
             Expr *expr = parse_expr(p);
-            list = list_add(list, expr);
+            if(token_match_dot(p)) {
+                Expr *car_val = expr;
+                Expr *cdr_val = parse_expr(p);
+                expr = cons(car_val, cdr_val);
+                list = list_append(list, expr);
+                assert(token_match_rparen(p));
+                break;
+            }
+            else {
+                list = list_pushb(list, expr);
+            }
         }
         return list;
     }
     else if(token_is_num(p)) {
-        Expr *expr = make_num(token_num_value(p));
+        Expr *expr = make_int(token_num_value(p));
         parse_next_token(p);
         return expr;
     }
@@ -255,4 +277,48 @@ Expr *parse_expr(Parser *p)
     else assert(false);
 
     return nil;
+}
+
+char *read_file(char *filename)
+{
+    FILE *file = fopen(filename, "rb");
+    if(file == nil) return nil;
+    fseek(file, 0, SEEK_END);
+    i64 fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *text = malloc(fsize + 1);
+    fread(text, fsize, 1, file);
+    text[fsize] = 0;
+    fclose(file);
+
+    return text;
+}
+
+static Expr *run_file(Expr *env, char *filename)
+{
+    Parser p;
+    char *text = read_file(filename);
+    if(text == nil) {
+        fprintf(stderr, "File %s couldn't be read\n", filename);
+        exit(1);
+    }
+    parser_init(&p, text);
+    Expr *code = parse_expr(&p);
+    return eval(env, code);
+}
+
+static Expr *include(Expr *args)
+{
+    Expr *env = car(args);
+    Expr *result;
+    args = cdr(args);
+    assert(!is_nil(args));
+    foreach(arg, args) {
+        Expr *arg = car(args);
+        assert(is_sym(arg));
+        char *filename = val_sym(arg);
+        result = run_file(env, filename);
+    }
+    return result;
 }

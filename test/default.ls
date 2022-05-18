@@ -1,10 +1,11 @@
 (do
-  (include env 'test/ops.ls)
-  (include env 'test/bool.ls)
-  (include env 'test/infix.ls)
-
-  (define mylist '(0 1 2 3 4 5))
-  (print (mapn mylist (lambda (n el) (* n el)))) ; -> (0 1 4 9 16 25)
-  ;(print (infix 2))
-  ;(print (infix 2 + -3)))
-  
+  (def * int-mul)
+  (def exp (lambda (x n)
+    (cond (int-eq n 0) 1
+          1            (int-mul x (exp x (int-sub n 1))))))
+  (def fact (lambda (n)
+    (cond (int-eq n 0) 1
+          1            (int-mul n (fact (int-sub n 1))))))
+  (def choose (lambda (n k)
+    (int-div (fact n) (int-mul (fact k) (fact (int-sub n k))))))
+  (print (* 2 3)))
