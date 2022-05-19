@@ -5,7 +5,7 @@ static Expr *f_is_nil(Expr *args)
 {
     assert(listn(args) == 1);
     Expr *expr = list_ith(args, 0);
-    return make_bool(is_nil(args));
+    return make_bool(is_nil(expr));
 }
 
 // Integers

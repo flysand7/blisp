@@ -150,12 +150,8 @@ static Expr *make_func(Func *f)
 
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
 {
-    assert(is_list(pars));
     assert(is_list(body));
-    Expr *param_list = pars;
-    foreach(param, param_list) {
-        assert(is_sym(param));
-    }
+    // TODO: check parameter list is sane
     Expr *closure = cons(env, cons(pars, body));
     closure->kind = EXPR_CLOSURE;
     return closure;
@@ -234,6 +230,7 @@ static Expr *env_default(Expr *parent)
 
 static Expr *env_lookup(Expr *env, Expr *symbol)
 {
+    assert(is_sym(symbol));
     Expr *bindings = env_bindings(env);
     foreach(bind, bindings) {
         if(sym_eq(symbol, bind_sym(bind))) {
@@ -246,6 +243,7 @@ static Expr *env_lookup(Expr *env, Expr *symbol)
 
 static void env_assoc_sym(Expr *env, Expr *symbol, Expr *value)
 {
+    assert(is_sym(symbol));
     bool found = false;
     Expr *bindings = env_bindings(env);
     foreach(bind, bindings) {
@@ -261,6 +259,23 @@ static void env_assoc_sym(Expr *env, Expr *symbol, Expr *value)
     }
 }
 
+static void assoc_pars(Expr *env, Expr *pars, Expr *args)
+{
+    if(is_nil(pars)) {
+        assert(is_nil(args));
+        return;
+    }
+    if(is_sym(pars)) {
+        env_assoc_sym(env, pars, args);
+        return;
+    }
+    if(is_pair(pars)) {
+        assert(is_pair(args));
+        assoc_pars(env, car(pars), car(args));
+        assoc_pars(env, cdr(pars), cdr(args));
+    }
+}
+
 static Expr *apply(Expr *op, Expr *args)
 {
     if(is_func(op)) {
@@ -270,12 +285,7 @@ static Expr *apply(Expr *op, Expr *args)
         Expr *env  = closure_env(op);
         Expr *pars = closure_params(op);
         Expr *body = closure_body(op);
-
-        foreach2(par, pars, arg, args) {
-            env_assoc_sym(env, par, arg);
-        }
-        assert(is_nil(args) && is_nil(pars));
-
+        assoc_pars(env, pars, args);
         Expr *result = nil;
         Expr *expr_list = body;
         foreach(expr, expr_list) {
