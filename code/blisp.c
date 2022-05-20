@@ -358,7 +358,7 @@ static Expr *eval(Expr *env, Expr *expr)
             env_assoc_sym(env, name, value);
             return value;
         }
-        else if(sym_is(op, "lam")) {
+        else if(sym_is(op, "\\")) {
             assert(listn(args) >= 2);
             Expr *new_env = env_create(env);
             Expr *params = car(args);

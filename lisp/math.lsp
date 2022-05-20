@@ -3,11 +3,11 @@
   (def (gen-f int-f flt-f p1 p2)
     (cond (int? p1) (cond (int? p2) (int-f p1 p2)
                           (flt? p2) (flt-f (flt-from-int p1) p2)
-                          1         'error)
+                          1         'type_error)
           (flt? p1) (cond (int? p2) (flt-f p1 (flt-from-int p2))
                           (flt? p2) (flt-f p1 p2)
-                          1         'error)
-          1         'error))
+                          1         'type_error)
+          1         'type_error))
 
   (def (foreach-accum init accum-func list)
     (cond (nil? list) init
@@ -40,4 +40,4 @@
   (def - gen-sub)
   (def / gen-div)
 
-  (print '(+ 1 2 -0.2)))
+  (print (+ 1 2 -0.2)))
