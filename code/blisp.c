@@ -325,7 +325,6 @@ static Expr *eval(Expr *env, Expr *expr)
 
     // (op arg1 arg2 ... argn)
     assert(is_list(expr));
-
     Expr *op   = car(expr);
     Expr *args = cdr(expr);
 
@@ -339,16 +338,27 @@ static Expr *eval(Expr *env, Expr *expr)
             return arg;
         }
         else if(sym_is(op, "def")) {
-            assert(listn(args) == 2);
-            Expr *sym = car(args);
-            Expr *value = eval(env, car(cdr(args)));
-            if(!is_sym(sym)) {
-                assert(false);
+            assert(listn(args) >= 2);
+            Expr *pat = car(args);
+            Expr *exprs = cdr(args);
+            Expr *name;
+            Expr *value;
+            if(is_sym(pat)) {
+                assert(listn(args) == 2);
+                name = pat;
+                value = eval(env, car(exprs));
             }
-            env_assoc_sym(env, sym, value);
+            else if(is_pair(pat)) {
+                Expr *new_env = env_create(env);
+                Expr *params = cdr(pat);
+                Expr *body = exprs;
+                name = car(pat);
+                value = make_closure(new_env, params, body);
+            }
+            env_assoc_sym(env, name, value);
             return value;
         }
-        else if(sym_is(op, "lambda")) {
+        else if(sym_is(op, "lam")) {
             assert(listn(args) >= 2);
             Expr *new_env = env_create(env);
             Expr *params = car(args);
@@ -412,7 +422,11 @@ static Expr *expr_print(Expr *expr)
             putchar(')');
         } break;
         case EXPR_CLOSURE: {
-            printf("<closure>");
+            printf("<closure ");
+            expr_print(closure_params(expr));
+            putchar(' ');
+            expr_print(closure_body(expr));
+            printf(">");
         } break;
     }
     return expr;
