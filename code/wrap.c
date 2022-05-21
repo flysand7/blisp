@@ -482,7 +482,7 @@ static Expr *f_apply(Expr *args)
 
 static Expr *f_print(Expr *args)
 {
-    Expr *last = nil;
+    Expr *last = make_nil();
     foreach(arg, args) {
         last = expr_print(arg);
         putchar(' ');

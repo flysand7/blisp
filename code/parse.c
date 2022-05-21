@@ -176,7 +176,7 @@ void lex_str(Parser *p)
     char *str = nil;
     i64 str_len = 0;
     lex_match(p, '"');
-    until(lex_match(p, '"') || lex_is_eof(p)) {
+    until(lex_is(p, '"') || lex_is_eof(p)) {
         char c = lex_last(p);
         if(lex_match(p, '\\')) {
             c = lex_last(p);
@@ -186,6 +186,7 @@ void lex_str(Parser *p)
         str[str_len++] = c;
     }
     assert(!lex_is_eof(p));
+    lex_advance(p);
     str = realloc(str, str_len);
     str[str_len] = 0;
     token_type(p) = TOKEN_STRING;
@@ -259,19 +260,19 @@ void parser_init(Parser *p, char *text)
 Expr *parse_expr(Parser *p)
 {
     if(token_match_lparen(p)) {
-        Expr *list = nil;
+        Expr *list = make_nil();
         until(token_match_rparen(p)) {
             Expr *expr = parse_expr(p);
             if(token_match_dot(p)) {
                 Expr *car_val = expr;
                 Expr *cdr_val = parse_expr(p);
                 expr = cons(car_val, cdr_val);
-                list = list_append(list, expr);
+                list_plugb(list, expr);
                 assert(token_match_rparen(p));
                 break;
             }
             else {
-                list = list_pushb(list, expr);
+                list_pushb(list, expr);
             }
         }
         return list;
@@ -298,7 +299,7 @@ Expr *parse_expr(Parser *p)
     }
     else if(token_match_quote(p)) {
         Expr *arg = parse_expr(p);
-        return cons(make_sym("quote"), cons(arg, nil));
+        return cons(make_sym("quote"), cons(arg, make_nil()));
     }
     else assert(false);
 

@@ -14,8 +14,6 @@ double   typedef f64;
 struct Expr typedef Expr;
 struct Pair typedef Pair;
 
-#define kind(expr) ((expr) == nil ? EXPR_NIL : (expr)->kind)
-
 typedef enum ExprKind {
     EXPR_NIL,
     EXPR_PAIR,
@@ -45,8 +43,11 @@ struct Pair {
     Expr *cdr;
 };
 
-// nil
+#define      kind(expr) (expr)->kind
+
+// Nil
 #define      is_nil(e) (kind(e) == EXPR_NIL)
+static Expr *make_nil();
 
 // Numbers
 static Expr *make_int(i64 value);
@@ -78,15 +79,15 @@ static bool  sym_is(Expr *sym, char *name);
 
 // Pairs
 static Expr *cons(Expr *car_val, Expr *cdr_val);
+static void  pair_from_nil(Expr *expr, Expr *car, Expr *cdr);
 #define      car(expr) expr->car
 #define      cdr(expr) expr->cdr
 #define      is_pair(e) (kind(e) == EXPR_PAIR)
 
 // Lists
 static Expr *list(int n, ...);
-static Expr *list_append(Expr *list, Expr *element);
-static Expr *list_pushb(Expr *list, Expr *element);
-static Expr *list_pushf(Expr *list, Expr *element);
+static void  list_plugb(Expr *list, Expr *value);
+static void  list_pushb(Expr *list, Expr *element);
 static i64   listn(Expr *list);
 static Expr *list_ith(Expr *list, i64 i);
 static bool  is_list(Expr *expr);
@@ -95,20 +96,6 @@ static bool  is_list(Expr *expr);
     for(Expr *name;                                             \
         name = (is_nil(list)? nil : car(list)), !is_nil(list);  \
         list = cdr(list))
-
-#define foreach2(name1, list1, name2, list2)                    \
-    for(Expr *name1, *name2;                                     \
-        name1 = (is_nil(list1)? nil : car(list1)),              \
-        name2 = (is_nil(list2)? nil : car(list2)),              \
-        !is_nil(list1) && !is_nil(list2);                       \
-        list1 = cdr(list1), list2 = cdr(list2))
-
-#define foreach_kv(kname, vname, list)                          \
-    for(Expr *kname, *vname;                                    \
-        kname = (is_nil(list)? nil : car(list)),                \
-        vname = (is_nil(cdr(list))? nil : car(cdr(list))),      \
-        !is_nil(list) && !is_nil(cdr(list));                    \
-        list = cdr(cdr(list)))
 
 // C functions
 static Expr *make_func(Func *f);

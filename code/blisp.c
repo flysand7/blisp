@@ -9,12 +9,21 @@ static bool is_literal(Expr *expr)
         || is_closure(expr);
 }
 
+// Nil
+
+static Expr *make_nil()
+{
+    Expr *expr = calloc(1, sizeof(Expr));
+    kind(expr) = EXPR_NIL;
+    return expr;
+}
+
 // Numbers
 
 static Expr *make_int(i64 value)
 {
     Expr *num = calloc(1, sizeof(Expr));
-    num->kind = EXPR_INT;
+    kind(num) = EXPR_INT;
     val_int(num) = value;
     return num;
 }
@@ -24,7 +33,7 @@ static Expr *make_int(i64 value)
 static Expr *make_flt(f64 value)
 {
     Expr *num = calloc(1, sizeof(Expr));
-    num->kind = EXPR_FLT;
+    kind(num) = EXPR_FLT;
     val_flt(num) = value;
     return num;
 }
@@ -46,7 +55,7 @@ static bool val_bool(Expr *expr)
 static Expr *make_str(char *str)
 {
     Expr *expr = calloc(1, sizeof(Expr));
-    expr->kind = EXPR_STR;
+    kind(expr) = EXPR_STR;
     val_str(expr) = str;
     return expr;
 }
@@ -78,47 +87,48 @@ static bool sym_is(Expr *sym, char *name)
 static Expr *cons(Expr *car_val, Expr *cdr_val)
 {
     Expr *pair = calloc(1, sizeof(Expr));
-    pair->kind = EXPR_PAIR;
-    pair->car = car_val;
-    pair->cdr = cdr_val;
+    kind(pair) = EXPR_PAIR;
+    car(pair) = car_val;
+    cdr(pair) = cdr_val;
     return pair;
+}
+
+static void pair_from_nil(Expr *expr, Expr *car_val, Expr *cdr_val)
+{
+    kind(expr) = EXPR_PAIR;
+    car(expr) = car_val;
+    cdr(expr) = cdr_val;
 }
 
 // Lists
 
 static Expr *list(int n, ...)
 {
-    Expr *list = nil;
+    Expr *list = make_nil();
     va_list args;
     va_start(args, n);
     for(i64 i = 0; i != n; ++i) {
         Expr *element = va_arg(args, Expr *);
-        list = list_pushb(list, element);
+        list_pushb(list, element);
     }
     va_end(args);
     return list;
 }
 
-static Expr *list_append(Expr *list, Expr *element)
+static void list_plugb(Expr *list, Expr *value)
 {
-    assert(is_list(list));
-    if(is_nil(list)) {
-        return element;
-    }
-    list->cdr = list_append(cdr(list), element);
-    return list;
+    if(is_nil(list))
+        *list = *value; // fuck i don't like this
+    else if(is_nil(cdr(list)))
+        cdr(list) = value;
+    else
+        list_plugb(cdr(list), value);
 }
 
-static Expr *list_pushb(Expr *list, Expr *element)
+static void list_pushb(Expr *list, Expr *element)
 {
     assert(is_list(list));
-    return list_append(list, cons(element, nil));
-}
-
-static Expr *list_pushf(Expr *list, Expr *element)
-{
-    assert(is_list(list));
-    return cons(element, list);
+    list_plugb(list, cons(element, make_nil()));
 }
 
 static i64 listn(Expr *list)
@@ -172,14 +182,14 @@ static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
 
 static Expr *env_create(Expr *parent)
 {
-    return cons(parent, nil);
+    return cons(parent, make_nil());
 }
 
 static Expr *env_default(Expr *parent)
 {
     Expr *env = env_create(parent);
 
-    env_bind(env, make_sym("nil"),         nil);
+    env_bind(env, make_sym("nil"),         make_nil());
 
     env_bind(env, make_sym("int?"),        make_func(f_is_int));
     env_bind(env, make_sym("flt?"),        make_func(f_is_flt));
@@ -272,7 +282,7 @@ static void env_bind(Expr *env, Expr *symbol, Expr *value)
     };
     if(!found) {
         Expr *bind = cons(symbol, value);
-        env = list_pushb(env, bind);
+        list_pushb(env, bind);
     }
 }
 
@@ -318,11 +328,11 @@ static Expr *apply(Expr *op, Expr *args)
 
 static Expr *evlist(Expr *env, Expr *arg_list)
 {
-    Expr *evargs = nil;
+    Expr *evargs = make_nil();
     Expr *args = arg_list;
     foreach(arg, args) {
         Expr *evarg = eval(env, arg);
-        evargs = list_pushb(evargs, evarg);
+        list_pushb(evargs, evarg);
     }
     return evargs;
 }
@@ -337,7 +347,9 @@ static Expr *eval(Expr *env, Expr *expr)
     // Symbols are evaluated to whatever they
     // are associated to in the environment.
     if(is_sym(expr)) {
-        return env_lookup(env, expr);
+        Expr *def = env_lookup(env, expr);
+        assert(def != nil);
+        return def;
     }
 
     // (op arg1 arg2 ... argn)
@@ -381,9 +393,9 @@ static Expr *eval(Expr *env, Expr *expr)
             return make_closure(env, params, body);
         }
         else if(sym_is(op, "list")) {
-            Expr *list = nil;
+            Expr *list = make_nil();
             foreach(arg, args) {
-                list = list_pushb(list, eval(env, arg));
+                list_pushb(list, eval(env, arg));
             }
             return list;
         }
@@ -399,7 +411,7 @@ static Expr *eval(Expr *env, Expr *expr)
                 }
             }
             assert(is_nil(cases));
-            return nil;
+            return make_nil();
         }
         else if(sym_is(op, "if")) {
             Expr *cond = eval(env, car(args));
@@ -422,7 +434,7 @@ static Expr *eval(Expr *env, Expr *expr)
             return make_bool(!val_bool(eval(env, car(args))));
         }
         else if(sym_is(op, "do")) {
-            Expr *last = nil;
+            Expr *last = make_nil();
             Expr *expr_list = args;
             foreach(expr, expr_list) {
                 last = eval(env, expr);
@@ -433,7 +445,9 @@ static Expr *eval(Expr *env, Expr *expr)
 
     Expr *func = eval(env, op);
     Expr *evargs = evlist(env, args);
-    return apply(func, evargs);
+    Expr *computed = apply(func, evargs);
+    assert(computed != nil);
+    return computed;
 }
 
 // Expression printing
