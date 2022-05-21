@@ -79,7 +79,6 @@ static bool  sym_is(Expr *sym, char *name);
 
 // Pairs
 static Expr *cons(Expr *car_val, Expr *cdr_val);
-static void  pair_from_nil(Expr *expr, Expr *car, Expr *cdr);
 #define      car(expr) expr->car
 #define      cdr(expr) expr->cdr
 #define      is_pair(e) (kind(e) == EXPR_PAIR)

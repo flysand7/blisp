@@ -9,33 +9,35 @@ static bool is_literal(Expr *expr)
         || is_closure(expr);
 }
 
+static Expr *new_expr(ExprKind kind)
+{
+    Expr *expr = calloc(1, sizeof(Expr));
+    kind(expr) = kind;
+}
+
 // Nil
 
 static Expr *make_nil()
 {
-    Expr *expr = calloc(1, sizeof(Expr));
-    kind(expr) = EXPR_NIL;
-    return expr;
+    return new_expr(EXPR_NIL);
 }
 
 // Numbers
 
 static Expr *make_int(i64 value)
 {
-    Expr *num = calloc(1, sizeof(Expr));
-    kind(num) = EXPR_INT;
-    val_int(num) = value;
-    return num;
+    Expr *expr = new_expr(EXPR_INT);
+    val_int(expr) = value;
+    return expr;
 }
 
 // Floats
 
 static Expr *make_flt(f64 value)
 {
-    Expr *num = calloc(1, sizeof(Expr));
-    kind(num) = EXPR_FLT;
-    val_flt(num) = value;
-    return num;
+    Expr *expr = new_expr(EXPR_FLT);
+    val_flt(expr) = value;
+    return expr;
 }
 
 // Booleans
@@ -54,8 +56,7 @@ static bool val_bool(Expr *expr)
 
 static Expr *make_str(char *str)
 {
-    Expr *expr = calloc(1, sizeof(Expr));
-    kind(expr) = EXPR_STR;
+    Expr *expr = new_expr(EXPR_STR);
     val_str(expr) = str;
     return expr;
 }
@@ -64,10 +65,9 @@ static Expr *make_str(char *str)
 
 static Expr *make_sym(char *name)
 {
-    Expr *sym = calloc(1, sizeof(Expr));
-    sym->kind = EXPR_SYM;
-    val_sym(sym) = name;
-    return sym;
+    Expr *expr = new_expr(EXPR_SYM);
+    val_sym(expr) = name;
+    return expr;
 }
 
 static bool sym_eq(Expr *sym1, Expr *sym2)
@@ -86,18 +86,10 @@ static bool sym_is(Expr *sym, char *name)
 
 static Expr *cons(Expr *car_val, Expr *cdr_val)
 {
-    Expr *pair = calloc(1, sizeof(Expr));
-    kind(pair) = EXPR_PAIR;
-    car(pair) = car_val;
-    cdr(pair) = cdr_val;
-    return pair;
-}
-
-static void pair_from_nil(Expr *expr, Expr *car_val, Expr *cdr_val)
-{
-    kind(expr) = EXPR_PAIR;
+    Expr *expr = new_expr(EXPR_PAIR);
     car(expr) = car_val;
     cdr(expr) = cdr_val;
+    return expr;
 }
 
 // Lists
@@ -161,8 +153,7 @@ static bool is_list(Expr *expr)
 
 static Expr *make_func(Func *f)
 {
-    Expr *expr = calloc(1, sizeof(Expr));
-    expr->kind = EXPR_FUNC;
+    Expr *expr = new_expr(EXPR_FUNC);
     func(expr) = f;
     return expr;
 }
@@ -174,7 +165,7 @@ static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
     assert(is_list(body));
     // TODO: check parameter list is sane
     Expr *closure = cons(env, cons(pars, body));
-    closure->kind = EXPR_CLOSURE;
+    kind(closure) = EXPR_CLOSURE;
     return closure;
 }
 
