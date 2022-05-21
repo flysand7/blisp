@@ -398,12 +398,26 @@ static Expr *f_is_sym(Expr *args)
     return make_bool(is_sym(expr));
 }
 
+static Expr *f_is_sym_eq(Expr *args)
+{
+    assert(listn(args) == 2);
+    Expr *expr1 = list_ith(args, 0);
+    Expr *expr2 = list_ith(args, 1);
+    assert(is_sym(expr1));
+    assert(is_sym(expr2));
+    return make_bool(sym_eq(expr1, expr2));
+}
+
+// Pairs
+
 static Expr *f_is_pair(Expr *args)
 {
     assert(listn(args) == 1);
     Expr *expr = list_ith(args, 0);
     return make_bool(is_pair(expr));
 }
+
+// Functions
 
 static Expr *f_is_func(Expr *args)
 {

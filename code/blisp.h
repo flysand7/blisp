@@ -107,7 +107,7 @@ static bool  is_list(Expr *expr);
     for(Expr *kname, *vname;                                    \
         kname = (is_nil(list)? nil : car(list)),                \
         vname = (is_nil(cdr(list))? nil : car(cdr(list))),      \
-        !is_nil(cdr(list));                                     \
+        !is_nil(list) && !is_nil(cdr(list));                    \
         list = cdr(cdr(list)))
 
 // C functions
@@ -126,7 +126,7 @@ static Expr *make_closure(Expr *env, Expr *pars, Expr *body);
 static Expr *env_create(Expr *parent);
 static Expr *env_default(Expr *parent);
 static Expr *env_lookup(Expr *env, Expr *symbol);
-static void  env_assoc_sym(Expr *env, Expr *symbol, Expr *value);
+static void  env_bind(Expr *env, Expr *symbol, Expr *value);
 #define      env_parent(env)   car(env)
 #define      env_bindings(env) cdr(env)
 #define      bind_sym(bind)    car(bind)

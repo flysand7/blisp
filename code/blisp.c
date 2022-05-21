@@ -178,64 +178,70 @@ static Expr *env_create(Expr *parent)
 static Expr *env_default(Expr *parent)
 {
     Expr *env = env_create(parent);
-    env_assoc_sym(env, make_sym("int?"),        make_func(f_is_int));
-    env_assoc_sym(env, make_sym("flt?"),        make_func(f_is_flt));
-    env_assoc_sym(env, make_sym("nil?"),        make_func(f_is_nil));
-    env_assoc_sym(env, make_sym("sym?"),        make_func(f_is_sym));
-    env_assoc_sym(env, make_sym("pair?"),       make_func(f_is_pair));
-    env_assoc_sym(env, make_sym("list?"),       make_func(f_is_list));
-    env_assoc_sym(env, make_sym("func?"),       make_func(f_is_func));
-    env_assoc_sym(env, make_sym("closure?"),    make_func(f_is_closure));
+
+    env_bind(env, make_sym("nil"),         nil);
+
+    env_bind(env, make_sym("int?"),        make_func(f_is_int));
+    env_bind(env, make_sym("flt?"),        make_func(f_is_flt));
+    env_bind(env, make_sym("nil?"),        make_func(f_is_nil));
+    env_bind(env, make_sym("sym?"),        make_func(f_is_sym));
+    env_bind(env, make_sym("pair?"),       make_func(f_is_pair));
+    env_bind(env, make_sym("list?"),       make_func(f_is_list));
+    env_bind(env, make_sym("func?"),       make_func(f_is_func));
+    env_bind(env, make_sym("closure?"),    make_func(f_is_closure));
 
     // Integers
-    env_assoc_sym(env, make_sym("int-bnot"),    make_func(f_int_bnot));
-    env_assoc_sym(env, make_sym("int-neg"),     make_func(f_int_neg));
-    env_assoc_sym(env, make_sym("int-add"),     make_func(f_int_add));
-    env_assoc_sym(env, make_sym("int-sub"),     make_func(f_int_sub));
-    env_assoc_sym(env, make_sym("int-mul"),     make_func(f_int_mul));
-    env_assoc_sym(env, make_sym("int-div"),     make_func(f_int_div));
-    env_assoc_sym(env, make_sym("int-rem"),     make_func(f_int_rem));
-    env_assoc_sym(env, make_sym("int-les"),     make_func(f_int_les));
-    env_assoc_sym(env, make_sym("int-grt"),     make_func(f_int_grt));
-    env_assoc_sym(env, make_sym("int-eq"),      make_func(f_int_eq));
-    env_assoc_sym(env, make_sym("int-neq"),     make_func(f_int_neq));
-    env_assoc_sym(env, make_sym("int-leq"),     make_func(f_int_leq));
-    env_assoc_sym(env, make_sym("int-geq"),     make_func(f_int_geq));
-    env_assoc_sym(env, make_sym("int-band"),    make_func(f_int_band));
-    env_assoc_sym(env, make_sym("int-bor"),     make_func(f_int_bor));
-    env_assoc_sym(env, make_sym("int-bxor"),    make_func(f_int_bxor));
+    env_bind(env, make_sym("int-bnot"),    make_func(f_int_bnot));
+    env_bind(env, make_sym("int-neg"),     make_func(f_int_neg));
+    env_bind(env, make_sym("int-add"),     make_func(f_int_add));
+    env_bind(env, make_sym("int-sub"),     make_func(f_int_sub));
+    env_bind(env, make_sym("int-mul"),     make_func(f_int_mul));
+    env_bind(env, make_sym("int-div"),     make_func(f_int_div));
+    env_bind(env, make_sym("int-rem"),     make_func(f_int_rem));
+    env_bind(env, make_sym("int-les?"),    make_func(f_int_les));
+    env_bind(env, make_sym("int-grt?"),    make_func(f_int_grt));
+    env_bind(env, make_sym("int-eq?"),     make_func(f_int_eq));
+    env_bind(env, make_sym("int-neq?"),    make_func(f_int_neq));
+    env_bind(env, make_sym("int-leq?"),    make_func(f_int_leq));
+    env_bind(env, make_sym("int-geq?"),    make_func(f_int_geq));
+    env_bind(env, make_sym("int-band"),    make_func(f_int_band));
+    env_bind(env, make_sym("int-bor"),     make_func(f_int_bor));
+    env_bind(env, make_sym("int-bxor"),    make_func(f_int_bxor));
 
     // Floats
-    env_assoc_sym(env, make_sym("flt-from-int"),make_func(f_flt_from_int));
-    env_assoc_sym(env, make_sym("flt-floor"),   make_func(f_flt_floor));
-    env_assoc_sym(env, make_sym("flt-ceil"),    make_func(f_flt_ceil));
-    env_assoc_sym(env, make_sym("flt-round"),   make_func(f_flt_round));
-    env_assoc_sym(env, make_sym("flt-trunc"),   make_func(f_flt_trunc));
-    env_assoc_sym(env, make_sym("flt-neg"),     make_func(f_flt_neg));
-    env_assoc_sym(env, make_sym("flt-inf?"),    make_func(f_flt_is_inf));
-    env_assoc_sym(env, make_sym("flt-nan?"),    make_func(f_flt_is_nan));
-    env_assoc_sym(env, make_sym("flt-normal?"), make_func(f_flt_is_normal));
-    env_assoc_sym(env, make_sym("flt-add"),     make_func(f_flt_add));
-    env_assoc_sym(env, make_sym("flt-sub"),     make_func(f_flt_sub));
-    env_assoc_sym(env, make_sym("flt-mul"),     make_func(f_flt_mul));
-    env_assoc_sym(env, make_sym("flt-div"),     make_func(f_flt_div));
-    env_assoc_sym(env, make_sym("flt-les"),     make_func(f_flt_les));
-    env_assoc_sym(env, make_sym("flt-grt"),     make_func(f_flt_grt));
-    env_assoc_sym(env, make_sym("flt-eq"),      make_func(f_flt_eq));
-    env_assoc_sym(env, make_sym("flt-neq"),     make_func(f_flt_neq));
-    env_assoc_sym(env, make_sym("flt-leq"),     make_func(f_flt_leq));
-    env_assoc_sym(env, make_sym("flt-geq"),     make_func(f_flt_geq));
+    env_bind(env, make_sym("flt-from-int"),make_func(f_flt_from_int));
+    env_bind(env, make_sym("flt-floor"),   make_func(f_flt_floor));
+    env_bind(env, make_sym("flt-ceil"),    make_func(f_flt_ceil));
+    env_bind(env, make_sym("flt-round"),   make_func(f_flt_round));
+    env_bind(env, make_sym("flt-trunc"),   make_func(f_flt_trunc));
+    env_bind(env, make_sym("flt-neg"),     make_func(f_flt_neg));
+    env_bind(env, make_sym("flt-inf?"),    make_func(f_flt_is_inf));
+    env_bind(env, make_sym("flt-nan?"),    make_func(f_flt_is_nan));
+    env_bind(env, make_sym("flt-normal?"), make_func(f_flt_is_normal));
+    env_bind(env, make_sym("flt-add"),     make_func(f_flt_add));
+    env_bind(env, make_sym("flt-sub"),     make_func(f_flt_sub));
+    env_bind(env, make_sym("flt-mul"),     make_func(f_flt_mul));
+    env_bind(env, make_sym("flt-div"),     make_func(f_flt_div));
+    env_bind(env, make_sym("flt-les?"),    make_func(f_flt_les));
+    env_bind(env, make_sym("flt-grt?"),    make_func(f_flt_grt));
+    env_bind(env, make_sym("flt-eq?"),     make_func(f_flt_eq));
+    env_bind(env, make_sym("flt-neq?"),    make_func(f_flt_neq));
+    env_bind(env, make_sym("flt-leq?"),    make_func(f_flt_leq));
+    env_bind(env, make_sym("flt-geq?"),    make_func(f_flt_geq));
+
+    // Symbols
+    env_bind(env, make_sym("sym-eq?"),     make_func(f_is_sym_eq));
 
     // Pairs
-    env_assoc_sym(env, make_sym("car"),         make_func(f_car));
-    env_assoc_sym(env, make_sym("cdr"),         make_func(f_cdr));
-    env_assoc_sym(env, make_sym("cons"),        make_func(f_cons));
+    env_bind(env, make_sym("car"),         make_func(f_car));
+    env_bind(env, make_sym("cdr"),         make_func(f_cdr));
+    env_bind(env, make_sym("cons"),        make_func(f_cons));
 
-    env_assoc_sym(env, make_sym("eval"),        make_func(f_eval));
-    env_assoc_sym(env, make_sym("apply"),       make_func(f_apply));
-    env_assoc_sym(env, make_sym("print"),       make_func(f_print));
-    env_assoc_sym(env, make_sym("inc"),         make_func(include));
-    env_assoc_sym(env, make_sym("env"),         env);
+    env_bind(env, make_sym("eval"),        make_func(f_eval));
+    env_bind(env, make_sym("apply"),       make_func(f_apply));
+    env_bind(env, make_sym("print"),       make_func(f_print));
+    env_bind(env, make_sym("inc"),         make_func(include));
+    env_bind(env, make_sym("env"),         env);
     return env;
 }
 
@@ -252,7 +258,7 @@ static Expr *env_lookup(Expr *env, Expr *symbol)
     return env_lookup(env_parent(env), symbol);
 }
 
-static void env_assoc_sym(Expr *env, Expr *symbol, Expr *value)
+static void env_bind(Expr *env, Expr *symbol, Expr *value)
 {
     assert(is_sym(symbol));
     bool found = false;
@@ -270,20 +276,20 @@ static void env_assoc_sym(Expr *env, Expr *symbol, Expr *value)
     }
 }
 
-static void assoc_pars(Expr *env, Expr *pars, Expr *args)
+static void bind_pars(Expr *env, Expr *pars, Expr *args)
 {
     if(is_nil(pars)) {
         assert(is_nil(args));
         return;
     }
     if(is_sym(pars)) {
-        env_assoc_sym(env, pars, args);
+        env_bind(env, pars, args);
         return;
     }
     if(is_pair(pars)) {
         assert(is_pair(args));
-        assoc_pars(env, car(pars), car(args));
-        assoc_pars(env, cdr(pars), cdr(args));
+        bind_pars(env, car(pars), car(args));
+        bind_pars(env, cdr(pars), cdr(args));
     }
 }
 
@@ -293,10 +299,10 @@ static Expr *apply(Expr *op, Expr *args)
         return func(op)(args);
     }
     else if(is_closure(op)) {
-        Expr *env  = closure_env(op);
+        Expr *env  = env_create(closure_env(op));
         Expr *pars = closure_params(op);
         Expr *body = closure_body(op);
-        assoc_pars(env, pars, args);
+        bind_pars(env, pars, args);
         Expr *result = nil;
         Expr *expr_list = body;
         foreach(expr, expr_list) {
@@ -360,33 +366,60 @@ static Expr *eval(Expr *env, Expr *expr)
                 value = eval(env, car(exprs));
             }
             else if(is_pair(pat)) {
-                Expr *new_env = env_create(env);
                 Expr *params = cdr(pat);
                 Expr *body = exprs;
                 name = car(pat);
-                value = make_closure(new_env, params, body);
+                value = make_closure(env, params, body);
             }
-            env_assoc_sym(env, name, value);
+            env_bind(env, name, value);
             return value;
         }
         else if(sym_is(op, "\\")) {
             assert(listn(args) >= 2);
-            Expr *new_env = env_create(env);
             Expr *params = car(args);
             Expr *body = cdr(args);
-            return make_closure(new_env, params, body);
+            return make_closure(env, params, body);
+        }
+        else if(sym_is(op, "list")) {
+            Expr *list = nil;
+            foreach(arg, args) {
+                list = list_pushb(list, eval(env, arg));
+            }
+            return list;
         }
         else if(sym_is(op, "cond")) {
             Expr *cases = args;
-            foreach_kv(test, branch, cases) {
-                Expr *cond = eval(env, test);
+            foreach(ncase, cases) {
+                Expr *cond = eval(env, car(ncase));
+                Expr *branch = car(cdr(ncase));
                 assert(is_int(cond));
-                if(val_int(cond)) {
+                assert(!is_nil(branch));
+                if(val_bool(cond)) {
                     return eval(env, branch);
                 }
             }
             assert(is_nil(cases));
             return nil;
+        }
+        else if(sym_is(op, "if")) {
+            Expr *cond = eval(env, car(args));
+            Expr *branch1 = car(cdr(args));
+            Expr *branch0 = car(cdr(cdr(args)));
+            if(val_bool(cond)) return eval(env, branch1);
+            else               return eval(env, branch0);
+        }
+        else if(sym_is(op, "and")) {
+            Expr *first = eval(env, car(args));
+            if(!val_bool(first)) return make_bool(false);
+            else return eval(env, car(cdr(args)));
+        }
+        else if(sym_is(op, "or")) {
+            Expr *first = eval(env, car(args));
+            if(val_bool(first)) return make_bool(true);
+            else return eval(env, car(cdr(args)));
+        }
+        else if(sym_is(op, "not")) {
+            return make_bool(!val_bool(eval(env, car(args))));
         }
         else if(sym_is(op, "do")) {
             Expr *last = nil;
@@ -412,7 +445,7 @@ static Expr *expr_print(Expr *expr)
         case EXPR_SYM: printf("%s",   val_sym(expr));  break;
         case EXPR_INT: printf("%lld", val_int(expr));  break;
         case EXPR_FLT: printf("%f",   val_flt(expr));  break;
-        case EXPR_STR: printf("\"%s\"", val_str(expr)); break;
+        case EXPR_STR: printf("%s", val_str(expr)); break;
         case EXPR_FUNC: printf("<fn: %p>", func(expr)); break;
         case EXPR_PAIR: {
             Expr *sexp = expr;

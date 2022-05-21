@@ -38,6 +38,4 @@
     (mul list))
 
   (def - gen-sub)
-  (def / gen-div)
-
-  (print (+ 1 2 -0.2)))
+  (def / gen-div))

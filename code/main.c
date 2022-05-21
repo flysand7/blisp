@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     Expr *env = env_default(nil);
 
     bool repl_mode = false;
-    char *filename = "lisp/default.ls";
+    char *filename = "lisp/default.lsp";
     if(argc == 2) {
         char *arg = argv[1];
         if(strcmp(arg, "/r") == 0) {
