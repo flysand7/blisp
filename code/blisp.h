@@ -20,6 +20,7 @@ typedef enum ExprKind {
     EXPR_NIL,
     EXPR_PAIR,
     EXPR_SYM,
+    EXPR_STR,
     EXPR_INT,
     EXPR_FLT,
     EXPR_FUNC,
@@ -58,6 +59,15 @@ static Expr *make_flt(f64 value);
 // Booleans
 static Expr *make_bool(bool b);
 static bool  val_bool(Expr *expr);
+
+// Interns
+#define      intern_next(i) car(i)
+#define      intern_str(i)  car(cdr(i))
+
+// Strings
+static Expr *make_str(char *str);
+#define      val_str(e) ((e)->str)
+#define      is_str(e) (kind(e) == EXPR_STR)
 
 // Symbols
 static Expr *make_sym(char *name);

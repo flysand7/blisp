@@ -3,6 +3,7 @@ static bool is_literal(Expr *expr)
 {
     return is_int(expr)
         || is_flt(expr)
+        || is_str(expr)
         || is_nil(expr)
         || is_func(expr)
         || is_closure(expr);
@@ -38,6 +39,16 @@ static Expr *make_bool(bool b)
 static bool val_bool(Expr *expr)
 {
     return val_int(expr);
+}
+
+// Strings
+
+static Expr *make_str(char *str)
+{
+    Expr *expr = calloc(1, sizeof(Expr));
+    expr->kind = EXPR_STR;
+    val_str(expr) = str;
+    return expr;
 }
 
 // Symbols
@@ -401,6 +412,7 @@ static Expr *expr_print(Expr *expr)
         case EXPR_SYM: printf("%s",   val_sym(expr));  break;
         case EXPR_INT: printf("%lld", val_int(expr));  break;
         case EXPR_FLT: printf("%f",   val_flt(expr));  break;
+        case EXPR_STR: printf("\"%s\"", val_str(expr)); break;
         case EXPR_FUNC: printf("<fn: %p>", func(expr)); break;
         case EXPR_PAIR: {
             Expr *sexp = expr;

@@ -6,6 +6,7 @@ typedef enum TokenType {
     TOKEN_SYMBOL,
     TOKEN_INTEGER,
     TOKEN_FLOAT,
+    TOKEN_STRING,
     TOKEN_QUOTE,
     TOKEN_COMMA,
     TOKEN_DOT,
@@ -170,6 +171,27 @@ void lex_literal(Parser *p)
     token_int_value(p) = ivalue;
 }
 
+void lex_str(Parser *p)
+{
+    char *str = nil;
+    i64 str_len = 0;
+    lex_match(p, '"');
+    until(lex_match(p, '"') || lex_is_eof(p)) {
+        char c = lex_last(p);
+        if(lex_match(p, '\\')) {
+            c = lex_last(p);
+        }
+        lex_advance(p);
+        str = realloc(str, str_len+1);
+        str[str_len++] = c;
+    }
+    assert(!lex_is_eof(p));
+    str = realloc(str, str_len);
+    str[str_len] = 0;
+    token_type(p) = TOKEN_STRING;
+    token_str_value(p) = str;
+}
+
 void parse_next_token(Parser *p)
 {
     p->last_token = (Token){0};
@@ -194,6 +216,9 @@ void parse_next_token(Parser *p)
     else if(lex_is_eof(p)) {
         token_type(p) = TOKEN_EOF;
     }
+    else if(lex_is(p, '"')) {
+        lex_str(p);
+    }
     else if(lex_is_literal(p)) {
         lex_literal(p);
     }
@@ -206,6 +231,7 @@ void parse_next_token(Parser *p)
 #define token_is_rparen(p) (token_type(p) == TOKEN_RPAREN)
 #define token_is_int(p)    (token_type(p) == TOKEN_INTEGER)
 #define token_is_flt(p)    (token_type(p) == TOKEN_FLOAT)
+#define token_is_str(p)    (token_type(p) == TOKEN_STRING)
 #define token_is_sym(p)    (token_type(p) == TOKEN_SYMBOL)
 
 bool token_match(Parser *p, TokenType t)
@@ -257,6 +283,11 @@ Expr *parse_expr(Parser *p)
     }
     else if(token_is_flt(p)) {
         Expr *expr = make_flt(token_flt_value(p));
+        parse_next_token(p);
+        return expr;
+    }
+    else if(token_is_str(p)) {
+        Expr *expr = make_str(token_str_value(p));
         parse_next_token(p);
         return expr;
     }
