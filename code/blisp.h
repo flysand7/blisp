@@ -22,13 +22,13 @@ typedef enum ExprKind {
     EXPR_INT,
     EXPR_FLT,
     EXPR_FUNC,
-    EXPR_CLOSURE,
 } ExprKind;
 
 Expr typedef *(Func)(Expr *args);
 
 struct Expr {
     ExprKind kind;
+    bool     atom;
     union {
         struct{ Expr *car, *cdr; };
         char *str;
@@ -44,6 +44,7 @@ struct Pair {
 };
 
 #define      kind(expr) (expr)->kind
+#define      atom(expr) (expr)->atom
 
 // Nil
 #define      is_nil(e) (kind(e) == EXPR_NIL)
@@ -102,11 +103,11 @@ static Expr *make_func(Func *f);
 #define      is_func(e) (kind(e) == EXPR_FUNC)
 
 // Closure
+static bool  is_closure(Expr *expr);
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body);
-#define      closure_env(closure)    car(closure)
-#define      closure_params(closure) car(cdr(closure))
-#define      closure_body(closure)   cdr(cdr(closure))
-#define      is_closure(e) (kind(e) == EXPR_CLOSURE)
+#define      closure_env(closure)    list_ith(closure, 1)
+#define      closure_params(closure) list_ith(closure, 2)
+#define      closure_body(closure)   list_ith(closure, 3)
 
 // Environment
 static Expr *env_create(Expr *parent);

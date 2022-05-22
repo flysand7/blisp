@@ -426,13 +426,6 @@ static Expr *f_is_func(Expr *args)
     return make_bool(is_func(expr));
 }
 
-static Expr *f_is_closure(Expr *args)
-{
-    assert(listn(args) == 1);
-    Expr *expr = list_ith(args, 0);
-    return make_bool(is_closure(expr));
-}
-
 static Expr *f_is_list(Expr *args)
 {
     assert(listn(args) == 1);

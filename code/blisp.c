@@ -1,32 +1,29 @@
 
-static bool is_literal(Expr *expr)
+static void expr_to_atom(Expr *expr)
 {
-    return is_int(expr)
-        || is_flt(expr)
-        || is_str(expr)
-        || is_nil(expr)
-        || is_func(expr)
-        || is_closure(expr);
+    atom(expr) = true;
 }
 
-static Expr *new_expr(ExprKind kind)
+static Expr *new_expr(ExprKind kind, bool atomic)
 {
     Expr *expr = calloc(1, sizeof(Expr));
     kind(expr) = kind;
+    atom(expr) = atomic;
+    return expr;
 }
 
 // Nil
 
 static Expr *make_nil()
 {
-    return new_expr(EXPR_NIL);
+    return new_expr(EXPR_NIL, true);
 }
 
 // Numbers
 
 static Expr *make_int(i64 value)
 {
-    Expr *expr = new_expr(EXPR_INT);
+    Expr *expr = new_expr(EXPR_INT, true);
     val_int(expr) = value;
     return expr;
 }
@@ -35,7 +32,7 @@ static Expr *make_int(i64 value)
 
 static Expr *make_flt(f64 value)
 {
-    Expr *expr = new_expr(EXPR_FLT);
+    Expr *expr = new_expr(EXPR_FLT, true);
     val_flt(expr) = value;
     return expr;
 }
@@ -56,7 +53,7 @@ static bool val_bool(Expr *expr)
 
 static Expr *make_str(char *str)
 {
-    Expr *expr = new_expr(EXPR_STR);
+    Expr *expr = new_expr(EXPR_STR, true);
     val_str(expr) = str;
     return expr;
 }
@@ -65,7 +62,7 @@ static Expr *make_str(char *str)
 
 static Expr *make_sym(char *name)
 {
-    Expr *expr = new_expr(EXPR_SYM);
+    Expr *expr = new_expr(EXPR_SYM, false);
     val_sym(expr) = name;
     return expr;
 }
@@ -86,7 +83,7 @@ static bool sym_is(Expr *sym, char *name)
 
 static Expr *cons(Expr *car_val, Expr *cdr_val)
 {
-    Expr *expr = new_expr(EXPR_PAIR);
+    Expr *expr = new_expr(EXPR_PAIR, false);
     car(expr) = car_val;
     cdr(expr) = cdr_val;
     return expr;
@@ -153,19 +150,29 @@ static bool is_list(Expr *expr)
 
 static Expr *make_func(Func *f)
 {
-    Expr *expr = new_expr(EXPR_FUNC);
+    Expr *expr = new_expr(EXPR_FUNC, true);
     func(expr) = f;
     return expr;
 }
 
 // Closures
 
+static bool is_closure(Expr *expr)
+{
+    if(is_list(expr) && !is_nil(expr)) {
+        Expr *flag = list_ith(expr, 0);
+        if(is_sym(flag) && sym_is(flag, "closure")) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
 {
     assert(is_list(body));
-    // TODO: check parameter list is sane
-    Expr *closure = cons(env, cons(pars, body));
-    kind(closure) = EXPR_CLOSURE;
+    Expr *closure = list(4, make_sym("closure"), env, pars, body);
+    expr_to_atom(closure);
     return closure;
 }
 
@@ -189,7 +196,6 @@ static Expr *env_default(Expr *parent)
     env_bind(env, make_sym("pair?"),       make_func(f_is_pair));
     env_bind(env, make_sym("list?"),       make_func(f_is_list));
     env_bind(env, make_sym("func?"),       make_func(f_is_func));
-    env_bind(env, make_sym("closure?"),    make_func(f_is_closure));
 
     // Integers
     env_bind(env, make_sym("int-bnot"),    make_func(f_int_bnot));
@@ -299,7 +305,7 @@ static Expr *apply(Expr *op, Expr *args)
     if(is_func(op)) {
         return func(op)(args);
     }
-    else if(is_closure(op)) {
+    else {
         Expr *env  = env_create(closure_env(op));
         Expr *pars = closure_params(op);
         Expr *body = closure_body(op);
@@ -310,10 +316,6 @@ static Expr *apply(Expr *op, Expr *args)
             result = eval(env, expr);
         }
         return result;
-    }
-    else {
-        assert(false);
-        return nil;
     }
 }
 
@@ -331,7 +333,7 @@ static Expr *evlist(Expr *env, Expr *arg_list)
 static Expr *eval(Expr *env, Expr *expr)
 {
     // Literals are evaluated to themselves
-    if(is_literal(expr)) {
+    if(atom(expr)) {
         return expr;
     }
 
@@ -445,7 +447,15 @@ static Expr *eval(Expr *env, Expr *expr)
 
 static Expr *expr_print(Expr *expr)
 {
-    switch(kind(expr)) {
+    // Special data
+    if(is_closure(expr)) {
+        printf("<closure ");
+        expr_print(closure_params(expr));
+        putchar(' ');
+        expr_print(closure_body(expr));
+        printf(">");
+    }
+    else switch(kind(expr)) {
         case EXPR_NIL: printf("nil");                  break;
         case EXPR_SYM: printf("%s",   val_sym(expr));  break;
         case EXPR_INT: printf("%lld", val_int(expr));  break;
@@ -470,13 +480,6 @@ static Expr *expr_print(Expr *expr)
                 }
             }
             putchar(')');
-        } break;
-        case EXPR_CLOSURE: {
-            printf("<closure ");
-            expr_print(closure_params(expr));
-            putchar(' ');
-            expr_print(closure_body(expr));
-            printf(">");
         } break;
     }
     return expr;
