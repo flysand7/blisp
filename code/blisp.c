@@ -1,4 +1,15 @@
 
+static void fatal_error(char *msg, ...)
+{
+    va_list args;
+    va_start(args, msg);
+    printf("[eval]: ");
+    vprintf(msg, args);
+    putchar('\n');
+    exit(1);
+    va_end(args);
+}
+
 static void expr_to_atom(Expr *expr)
 {
     atom(expr) = true;
@@ -305,7 +316,7 @@ static Expr *apply(Expr *op, Expr *args)
     if(is_func(op)) {
         return func(op)(args);
     }
-    else {
+    else if(is_closure(op)) {
         Expr *env  = env_create(closure_env(op));
         Expr *pars = closure_params(op);
         Expr *body = closure_body(op);
@@ -316,6 +327,12 @@ static Expr *apply(Expr *op, Expr *args)
             result = eval(env, expr);
         }
         return result;
+    }
+    else {
+        // TODO: I should implement custom format specifiers for this
+        // to work properly
+        fatal_error("Trying to apply a non-callable object");
+        return nil;
     }
 }
 
@@ -341,7 +358,9 @@ static Expr *eval(Expr *env, Expr *expr)
     // are associated to in the environment.
     if(is_sym(expr)) {
         Expr *def = env_lookup(env, expr);
-        assert(def != nil);
+        if(def == nil) {
+            fatal_error("Symbol '%s' is not defined", val_sym(expr));
+        }
         return def;
     }
 

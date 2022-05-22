@@ -24,7 +24,21 @@ struct Parser typedef Parser;
 struct Parser {
     char *stream;
     Token last_token;
+    char *fname;
+    i64 line;
+    i64 col;
 };
+
+static void parse_fatal_error(Parser *p, char *msg, ...)
+{
+    va_list args;
+    va_start(args, msg);
+    printf("%s(%lld:%lld) [parse]: ", p->fname, p->line+1, p->col+1);
+    vprintf(msg, args);
+    putchar('\n');
+    exit(1);
+    va_end(args);
+}
 
 bool is_whitespace_char(i64 c)
 {
@@ -52,16 +66,20 @@ i64 char_digit_value(i64 c)
     return c - '0';
 }
 
-void lex_advance(Parser *p)
-{
-    p->stream++;
-}
-
 i64 lex_last(Parser *p)
 {
     return *p->stream;
 }
 
+void lex_advance(Parser *p)
+{
+    p->stream++;
+    p->col++;
+    if(lex_last(p) == '\n') {
+        p->col = 0;
+        p->line++;
+    }
+}
 
 bool lex_is(Parser *p, i64 i)
 {
@@ -151,24 +169,32 @@ void lex_literal(Parser *p)
     char *end = lit;
 
     // Try parsing an integer
+    errno = 0;
     i64 ivalue = strtoll(lit, &end, 10);
-    assert(errno != ERANGE);
-    if(*end != 0) {
-        // Try parsing a float
-        f64 fvalue = strtod(lit, &end);
-        assert(fvalue != HUGE_VAL);
-        if(*end != 0) {
-            // Parse it as a literal
-            token_type(p) = TOKEN_SYMBOL;
-            token_str_value(p) = lit;
-            return;
-        }
+    if(errno == ERANGE) {
+        parse_fatal_error(p, "Value %s is too big for an int.", lit);
+    }
+    if(*end == 0) {
+        token_type(p) = TOKEN_INTEGER;
+        token_int_value(p) = ivalue;
+        return;
+    }
+    // Try parsing a float
+    errno = 0;
+    f64 fvalue = strtod(lit, &end);
+    if(errno == ERANGE) {
+        parse_fatal_error(p, "Value %s is too big for a float.", lit);
+    }
+    if(*end == 0) {
         token_type(p) = TOKEN_FLOAT;
         token_flt_value(p) = fvalue;
         return;
     }
-    token_type(p) = TOKEN_INTEGER;
-    token_int_value(p) = ivalue;
+
+    // Parse it as a literal
+    token_type(p) = TOKEN_SYMBOL;
+    token_str_value(p) = lit;
+    return;
 }
 
 void lex_str(Parser *p)
@@ -185,8 +211,9 @@ void lex_str(Parser *p)
         str = realloc(str, str_len+1);
         str[str_len++] = c;
     }
-    assert(!lex_is_eof(p));
-    lex_advance(p);
+    if(!lex_match(p, '"')) {
+        parse_fatal_error(p, "Unterminated string literal.");
+    }
     str = realloc(str, str_len);
     str[str_len] = 0;
     token_type(p) = TOKEN_STRING;
@@ -234,6 +261,7 @@ void parse_next_token(Parser *p)
 #define token_is_flt(p)    (token_type(p) == TOKEN_FLOAT)
 #define token_is_str(p)    (token_type(p) == TOKEN_STRING)
 #define token_is_sym(p)    (token_type(p) == TOKEN_SYMBOL)
+#define token_is_eof(p)    (token_type(p) == TOKEN_EOF)
 
 bool token_match(Parser *p, TokenType t)
 {
@@ -251,9 +279,12 @@ bool token_match(Parser *p, TokenType t)
 #define token_match_lparen(p) token_match(p, TOKEN_LPAREN)
 #define token_match_rparen(p) token_match(p, TOKEN_RPAREN)
 
-void parser_init(Parser *p, char *text)
+void parser_init(Parser *p, char *fname, char *text)
 {
     p->stream = text;
+    p->fname = fname;
+    p->line = 0;
+    p->col = 0;
     parse_next_token(p);
 }
 
@@ -261,19 +292,21 @@ Expr *parse_expr(Parser *p)
 {
     if(token_match_lparen(p)) {
         Expr *list = make_nil();
-        until(token_match_rparen(p)) {
+        until(token_is_rparen(p) || token_is_eof(p)) {
             Expr *expr = parse_expr(p);
             if(token_match_dot(p)) {
                 Expr *car_val = expr;
                 Expr *cdr_val = parse_expr(p);
                 expr = cons(car_val, cdr_val);
                 list_plugb(list, expr);
-                assert(token_match_rparen(p));
                 break;
             }
             else {
                 list_pushb(list, expr);
             }
+        }
+        if(!token_match_rparen(p)) {
+            parse_fatal_error(p, "Expected ')'");
         }
         return list;
     }
@@ -300,6 +333,9 @@ Expr *parse_expr(Parser *p)
     else if(token_match_quote(p)) {
         Expr *arg = parse_expr(p);
         return cons(make_sym("quote"), cons(arg, make_nil()));
+    }
+    else if(token_is_eof(p)) {
+        parse_fatal_error(p, "Unexpected EOF.");
     }
     else assert(false);
 
@@ -330,7 +366,7 @@ static Expr *run_file(Expr *env, char *filename)
         fprintf(stderr, "File %s couldn't be read\n", filename);
         exit(1);
     }
-    parser_init(&p, text);
+    parser_init(&p, filename, text);
     Expr *code = parse_expr(&p);
     return eval(env, code);
 }
