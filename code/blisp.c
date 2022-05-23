@@ -297,7 +297,9 @@ static void env_bind(Expr *env, Expr *symbol, Expr *value)
 static void bind_pars(Expr *env, Expr *pars, Expr *args)
 {
     if(is_nil(pars)) {
-        assert(is_nil(args));
+        if(!is_nil(args)) {
+            fatal_error("Too much arguments to call a function.");
+        }
         return;
     }
     if(is_sym(pars)) {
@@ -305,7 +307,9 @@ static void bind_pars(Expr *env, Expr *pars, Expr *args)
         return;
     }
     if(is_pair(pars)) {
-        assert(is_pair(args));
+        if(is_nil(args)) {
+            fatal_error("Not enough arguments to call a function.");
+        }
         bind_pars(env, car(pars), car(args));
         bind_pars(env, cdr(pars), cdr(args));
     }
