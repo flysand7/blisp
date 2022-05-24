@@ -1,5 +1,5 @@
 (do
-  (inc env 'lisp/math.lsp)
+  (inc "lisp/math.lsp")
 
   (def (d/dv expr v)
     (cond ((const? expr v)

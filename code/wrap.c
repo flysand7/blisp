@@ -457,14 +457,6 @@ static Expr *f_cdr(Expr *args)
     return cdr(expr);
 }
 
-static Expr *f_eval(Expr *args)
-{
-    assert(listn(args) == 2);
-    Expr *env  = list_ith(args, 0);
-    Expr *expr = list_ith(args, 1);
-    return eval(env, expr);
-}
-
 static Expr *f_apply(Expr *args)
 {
     assert(listn(args) == 2);

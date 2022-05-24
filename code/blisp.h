@@ -11,6 +11,7 @@ double   typedef f64;
 #define repeat   do
 #define nil      NULL
 
+struct Alloc typedef Alloc;
 struct Expr typedef Expr;
 struct Pair typedef Pair;
 
@@ -43,8 +44,16 @@ struct Pair {
     Expr *cdr;
 };
 
+struct Alloc {
+    Expr expr;
+    bool mark;
+    Alloc *next;
+};
+
 #define      kind(expr) (expr)->kind
 #define      atom(expr) (expr)->atom
+
+static Expr *new_expr(ExprKind kind, bool atomic);
 
 // Nil
 #define      is_nil(e) (kind(e) == EXPR_NIL)

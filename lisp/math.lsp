@@ -1,5 +1,5 @@
 (do
-  (inc env 'lisp/util.lsp)
+  (inc "lisp/util.lsp")
 
   (def (gen-f int-f flt-f p1 p2)
     (cond ((int? p1) (cond ((int? p2) (int-f p1 p2))

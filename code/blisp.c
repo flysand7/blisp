@@ -1,4 +1,7 @@
 
+Expr *gc_stack;
+Alloc *global_allocs = nil;
+
 static void fatal_error(char *msg, ...)
 {
     va_list args;
@@ -17,10 +20,56 @@ static void expr_to_atom(Expr *expr)
 
 static Expr *new_expr(ExprKind kind, bool atomic)
 {
-    Expr *expr = calloc(1, sizeof(Expr));
+    Alloc *alloc = calloc(1, sizeof(Alloc));
+    alloc->mark = 0;
+    alloc->next = global_allocs;
+    global_allocs = alloc;
+    Expr *expr = &alloc->expr;
     kind(expr) = kind;
     atom(expr) = atomic;
     return expr;
+}
+
+// Garbage collection
+
+void gc_stack_push(Expr *expr)
+{
+    gc_stack = cons(expr, gc_stack);
+}
+
+void gc_stack_pop()
+{
+    gc_stack = cdr(gc_stack);
+}
+
+void gc_mark(Expr *expr)
+{
+    Alloc *alloc = (Alloc *)expr;
+    if(alloc->mark) return;
+    alloc->mark = true;
+    if(is_pair(expr)) {
+        gc_mark(car(expr));
+        gc_mark(cdr(expr));
+    }
+}
+
+void gc_sweep() {
+    Alloc **link = &global_allocs;
+
+    while(*link != nil) {
+        Alloc *alloc = *link;
+        if(!alloc->mark) {
+            *link = alloc->next;
+            free(alloc);
+        }
+        else {
+            link = &alloc->next;
+        }
+    }
+
+    for(Alloc *alloc = global_allocs; alloc != nil; alloc=alloc->next) {
+        alloc->mark = false;
+    }
 }
 
 // Nil
@@ -255,11 +304,9 @@ static Expr *env_default(Expr *parent)
     env_bind(env, make_sym("cdr"),         make_func(f_cdr));
     env_bind(env, make_sym("cons"),        make_func(f_cons));
 
-    env_bind(env, make_sym("eval"),        make_func(f_eval));
     env_bind(env, make_sym("apply"),       make_func(f_apply));
     env_bind(env, make_sym("print"),       make_func(f_print));
-    env_bind(env, make_sym("inc"),         make_func(include));
-    env_bind(env, make_sym("env"),         env);
+    //env_bind(env, make_sym("env"),         env);
     return env;
 }
 
@@ -456,6 +503,21 @@ static Expr *eval(Expr *env, Expr *expr)
                 last = eval(env, expr);
             }
             return last;
+        }
+        else if(sym_is(op, "inc")) {
+            Expr *result;
+            assert(!is_nil(args));
+            foreach(arg, args) {
+                Expr *arg = car(args);
+                assert(is_str(arg));
+                char *filename = val_str(arg);
+                result = run_file(env, filename);
+            }
+            return result;
+        }
+        else if(sym_is(op, "eval")) {
+            Expr *expr = list_ith(args, 0);
+            return eval(env, expr);
         }
     }
 

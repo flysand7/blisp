@@ -1,5 +1,5 @@
 (do
-  (inc env 'lisp/math.lsp)
+  (inc "lisp/math.lsp")
 
   (def (sin x)
     (taylor-seq x sin-taylor-term))

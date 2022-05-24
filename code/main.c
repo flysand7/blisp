@@ -11,18 +11,17 @@
 
 #include "blisp.h"
 
-static Expr *include(Expr *args);
-
 // #include "builtin/include.c"
 
 #include "wrap.c"
-#include "blisp.c"
 #include "parse.c"
+#include "blisp.c"
 
 int main(int argc, char **argv)
 {
     Parser p = {0};
 
+    gc_stack = make_nil();
     Expr *env = env_default(make_nil());
 
     bool repl_mode = false;

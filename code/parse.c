@@ -370,18 +370,3 @@ static Expr *run_file(Expr *env, char *filename)
     Expr *code = parse_expr(&p);
     return eval(env, code);
 }
-
-static Expr *include(Expr *args)
-{
-    Expr *env = car(args);
-    Expr *result;
-    args = cdr(args);
-    assert(!is_nil(args));
-    foreach(arg, args) {
-        Expr *arg = car(args);
-        assert(is_sym(arg));
-        char *filename = val_sym(arg);
-        result = run_file(env, filename);
-    }
-    return result;
-}
