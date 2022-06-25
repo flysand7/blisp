@@ -366,7 +366,11 @@ static Expr *run_file(Expr *env, char *filename)
         fprintf(stderr, "File %s couldn't be read\n", filename);
         exit(1);
     }
+    Expr *result = make_nil();
     parser_init(&p, filename, text);
-    Expr *code = parse_expr(&p);
-    return eval(env, code);
+    until(token_is_eof(&p)) {
+        Expr *code = parse_expr(&p);
+        result = eval(env, code);
+    }
+    return result;
 }
