@@ -21,7 +21,6 @@ int main(int argc, char **argv)
 {
     Parser p = {0};
 
-    gc_stack = make_nil();
     Expr *env = env_default(make_nil());
 
     bool repl_mode = false;

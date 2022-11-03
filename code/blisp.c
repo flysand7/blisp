@@ -537,7 +537,15 @@ static Expr *eval(Expr *env, Expr *expr)
 {
     Expr *stack = make_nil();
     Expr *result;
+    int gc_counter = 0;
     do {
+        if(++gc_counter == 1000) {
+            gc_mark(expr);
+            gc_mark(env);
+            gc_mark(stack);
+            gc_sweep();
+            gc_counter = 0;
+        }
         // Literals are evaluated to themselves
         if(atom(expr)) {
             result = expr;
