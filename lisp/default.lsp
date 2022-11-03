@@ -1,8 +1,7 @@
-(inc "lisp/math.lsp")
 
-(def (count n)
-  (if (= n 0)
-    1
-    (count (- n 1))))
+(def (count n a)
+  (if (int-eq? n 0)
+      a
+      (count (int-sub n 1) (int-add a 1))))
 
-(print (count 100))
+(count 100000 0)

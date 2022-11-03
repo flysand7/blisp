@@ -30,6 +30,7 @@ Expr typedef *(Func)(Expr *args);
 struct Expr {
     ExprKind kind;
     bool     atom;
+    bool     macro;
     union {
         struct{ Expr *car, *cdr; };
         char *str;
@@ -89,16 +90,18 @@ static bool  sym_is(Expr *sym, char *name);
 
 // Pairs
 static Expr *cons(Expr *car_val, Expr *cdr_val);
-#define      car(expr) expr->car
-#define      cdr(expr) expr->cdr
+#define      car(expr) (expr)->car
+#define      cdr(expr) (expr)->cdr
 #define      is_pair(e) (kind(e) == EXPR_PAIR)
 
 // Lists
 static Expr *list(int n, ...);
 static void  list_plugb(Expr *list, Expr *value);
 static void  list_pushb(Expr *list, Expr *element);
+static void  list_reverse(Expr **list);
 static i64   listn(Expr *list);
 static Expr *list_ith(Expr *list, i64 i);
+static void  list_set(Expr *list, i64 i, Expr *value);
 static bool  is_list(Expr *expr);
 
 #define foreach(name, list)                                     \
@@ -118,6 +121,14 @@ static Expr *make_closure(Expr *env, Expr *pars, Expr *body);
 #define      closure_params(closure) list_ith(closure, 2)
 #define      closure_body(closure)   list_ith(closure, 3)
 
+// Macro
+static bool  is_macro(Expr *expr);
+static Expr *make_macro(Expr *env, Expr *pars, Expr *body);
+#define      macro_env(macro)        list_ith(macro, 1)
+#define      macro_params(macro)     list_ith(macro, 2)
+#define      macro_body(macro)       list_ith(macro, 3)
+
+
 // Environment
 static Expr *env_create(Expr *parent);
 static Expr *env_default(Expr *parent);
@@ -130,7 +141,6 @@ static void  env_bind(Expr *env, Expr *symbol, Expr *value);
 
 // Evaluator
 static Expr *eval(Expr *env, Expr *expr);
-static Expr *apply(Expr *op, Expr *pars);
 
 // Expression printing
 static Expr *expr_print(Expr *expr);

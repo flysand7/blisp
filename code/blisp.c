@@ -180,6 +180,18 @@ static void list_pushb(Expr *list, Expr *element)
     list_plugb(list, cons(element, make_nil()));
 }
 
+static void list_reverse(Expr **list)
+{
+    Expr *tail = make_nil();
+    while(!is_nil(*list)) {
+        Expr *p = cdr(*list);
+        cdr(*list) = tail;
+        tail = *list;
+        *list = p;
+    }
+    *list = tail;
+}
+
 static i64 listn(Expr *list)
 {
     i64 count = 0;
@@ -197,6 +209,13 @@ static Expr *list_ith(Expr *list, i64 i)
         list = cdr(list);
     }
     return car(list);
+}
+
+static void list_set(Expr *list, i64 i, Expr *value) {
+    while(i--) {
+        list = cdr(list);
+    }
+    car(list) = value;
 }
 
 static bool is_list(Expr *expr)
@@ -235,6 +254,21 @@ static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
     expr_to_atom(closure);
     return closure;
 }
+
+// Macros
+
+static bool is_macro(Expr *expr)
+{
+    return is_closure(expr) && expr->macro;
+}
+
+static Expr *make_macro(Expr *env, Expr *pars, Expr *body)
+{
+    Expr *macro = make_closure(env, pars, body);
+    macro->macro = true;
+    return macro;
+}
+
 
 // Environment
 
@@ -304,9 +338,7 @@ static Expr *env_default(Expr *parent)
     env_bind(env, make_sym("cdr"),         make_func(f_cdr));
     env_bind(env, make_sym("cons"),        make_func(f_cons));
 
-    env_bind(env, make_sym("apply"),       make_func(f_apply));
     env_bind(env, make_sym("print"),       make_func(f_print));
-    //env_bind(env, make_sym("env"),         env);
     return env;
 }
 
@@ -362,170 +394,274 @@ static void bind_pars(Expr *env, Expr *pars, Expr *args)
     }
 }
 
-static Expr *apply(Expr *op, Expr *args)
+static Expr *make_frame(Expr *parent, Expr *env, Expr *tail)
 {
+    return list(7,
+        parent,
+        env,
+        make_nil(),
+        tail,
+        make_nil(),
+        make_nil(),
+        make_nil()
+    );
+}
+
+static Expr *eval_do_exec(Expr **stack, Expr **env)
+{
+    Expr *body;
+    *env = list_ith(*stack, 1);
+    body = list_ith(*stack, 5);
+    Expr *expr = car(body);
+    body = cdr(body);
+    if(is_nil(body)) {
+        *stack = car(*stack);
+    }
+    else {
+        list_set(*stack, 5, body);
+    }
+    return expr;
+}
+
+static Expr *eval_do_bind(Expr **stack, Expr **env)
+{
+    Expr *body = list_ith(*stack, 5);
+    if(!is_nil(body)) {
+        return eval_do_exec(stack, env);
+    }
+    Expr *op = list_ith(*stack, 2);
+    Expr *args = list_ith(*stack, 4);
+    *env = env_create(closure_env(op));
+    Expr *pars = closure_params(op);
+    body = closure_body(op);
+    list_set(*stack, 1, *env);
+    list_set(*stack, 5, body);
+    bind_pars(*env, pars, args);
+    list_set(*stack, 4, make_nil());
+    return eval_do_exec(stack, env);
+}
+
+static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
+{
+    Expr *op = list_ith(*stack, 2);
+    Expr *args = list_ith(*stack, 4);
+    if(!is_nil(args)) {
+        list_reverse(&args);
+        list_set(*stack, 4, args);
+    }
+    if(is_sym(op)) {
+        // instead of (apply, op, (args)) we execute (op, args)
+        if(sym_is(op, "apply")) {
+            *stack = car(*stack);
+            *stack = make_frame(*stack, *env, make_nil());
+            op = car(args);
+            args = car(cdr(args));
+            if(!is_list(args)) {
+                fatal_error("Symbol '%s' is not defined", val_str(args));
+            }
+            list_set(*stack, 2, op);
+            list_set(*stack, 4, args);
+        }
+    }
     if(is_func(op)) {
-        return func(op)(args);
+        *stack = car(*stack);
+        return cons(op, args);
     }
     else if(is_closure(op)) {
-        Expr *env  = env_create(closure_env(op));
-        Expr *pars = closure_params(op);
-        Expr *body = closure_body(op);
-        bind_pars(env, pars, args);
-        Expr *result = nil;
-        Expr *expr_list = body;
-        foreach(expr, expr_list) {
-            result = eval(env, expr);
-        }
-        return result;
+        return eval_do_bind(stack, env);
     }
     else {
         // TODO: I should implement custom format specifiers for this
         // to work properly
         fatal_error("Trying to apply a non-callable object");
-        return nil;
+        return make_nil();
     }
 }
 
-static Expr *evlist(Expr *env, Expr *arg_list)
-{
-    Expr *evargs = make_nil();
-    Expr *args = arg_list;
-    foreach(arg, args) {
-        Expr *evarg = eval(env, arg);
-        list_pushb(evargs, evarg);
+static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
+    *env = list_ith(*stack, 1);
+    Expr *op = list_ith(*stack, 2);
+    Expr *body = list_ith(*stack, 5);
+    if(!is_nil(body)) {
+        return eval_do_apply(stack, env, result);
     }
-    return evargs;
+    if(is_nil(op)) {
+        op = *result;
+        list_set(*stack, 2, op);
+        if(is_macro(op)) {
+            Expr *args = list_ith(*stack, 3);
+            *stack = make_frame(*stack, *env, make_nil());
+            op->macro = true;
+            list_set(*stack, 2, op);
+            list_set(*stack, 4, args);
+            return eval_do_bind(stack, env);
+        }
+    }
+    else if(is_sym(op)) {
+        if(sym_is(op, "def")) {
+            Expr *name = list_ith(*stack, 4);
+            env_bind(*env, name, *result);
+            *stack = car(*stack);
+            return cons(make_sym("quote"), cons(name, make_nil()));
+        }
+        else if(sym_is(op, "if")) {
+            Expr *args = list_ith(*stack, 3);
+            *stack = car(*stack);
+            if(!is_int(*result)) {
+                fatal_error("The if condition must be a bool.");
+            }
+            return val_bool(*result)? car(args) : car(cdr(args));
+        }
+        else {
+            goto store_arg;
+        }
+    }
+    else if(is_macro(op)) {
+        *stack = car(*stack);
+        return *result;
+    }
+    else {
+store_arg:;
+        Expr *args = list_ith(*stack, 4);
+        list_set(*stack, 4, cons(*result, args));
+    }
+    Expr *args = list_ith(*stack, 3);
+    if(is_nil(args)) {
+        return eval_do_apply(stack, env, result);
+    }
+    list_set(*stack, 3, cdr(args));
+    return car(args);
 }
 
 static Expr *eval(Expr *env, Expr *expr)
 {
-    // Literals are evaluated to themselves
-    if(atom(expr)) {
-        return expr;
-    }
-
-    // Symbols are evaluated to whatever they
-    // are associated to in the environment.
-    if(is_sym(expr)) {
-        Expr *def = env_lookup(env, expr);
-        if(def == nil) {
-            fatal_error("Symbol '%s' is not defined", val_sym(expr));
+    Expr *stack = make_nil();
+    Expr *result;
+    do {
+        // Literals are evaluated to themselves
+        if(atom(expr)) {
+            result = expr;
         }
-        return def;
-    }
 
-    // (op arg1 arg2 ... argn)
-    assert(is_list(expr));
-    Expr *op   = car(expr);
-    Expr *args = cdr(expr);
-
-    assert(!is_nil(op));
-
-    // Special forms, e.g quote and define
-    if(is_sym(op)) {
-        if(sym_is(op, "quote")) {
-            assert(listn(args) == 1);
-            Expr *arg = car(args);
-            return arg;
-        }
-        else if(sym_is(op, "def")) {
-            assert(listn(args) >= 2);
-            Expr *pat = car(args);
-            Expr *exprs = cdr(args);
-            Expr *name;
-            Expr *value;
-            if(is_sym(pat)) {
-                assert(listn(args) == 2);
-                name = pat;
-                value = eval(env, car(exprs));
+        // Symbols are evaluated to whatever they
+        // are associated to in the environment.
+        else if(is_sym(expr)) {
+            Expr *def = env_lookup(env, expr);
+            if(def == nil) {
+                fatal_error("Symbol '%s' is not defined", val_sym(expr));
             }
-            else if(is_pair(pat)) {
-                Expr *params = cdr(pat);
-                Expr *body = exprs;
-                name = car(pat);
-                value = make_closure(env, params, body);
-            }
-            env_bind(env, name, value);
-            return value;
+            result = def;
         }
-        else if(sym_is(op, "\\")) {
-            assert(listn(args) >= 2);
-            Expr *params = car(args);
-            Expr *body = cdr(args);
-            return make_closure(env, params, body);
-        }
-        else if(sym_is(op, "list")) {
-            Expr *list = make_nil();
-            foreach(arg, args) {
-                list_pushb(list, eval(env, arg));
-            }
-            return list;
-        }
-        else if(sym_is(op, "cond")) {
-            Expr *cases = args;
-            foreach(ncase, cases) {
-                Expr *cond = eval(env, car(ncase));
-                Expr *branch = car(cdr(ncase));
-                assert(is_int(cond));
-                assert(!is_nil(branch));
-                if(val_bool(cond)) {
-                    return eval(env, branch);
+
+        // (op arg1 arg2 ... argn)
+        else {
+            assert(is_list(expr));
+            Expr *op   = car(expr);
+            Expr *args = cdr(expr);
+            assert(!is_nil(op));
+            // Special forms, e.g quote and define
+            if(is_sym(op)) {
+                if(sym_is(op, "quote")) {
+                    assert(listn(args) == 1);
+                    Expr *arg = car(args);
+                    result = arg;
+                }
+                else if(sym_is(op, "def")) {
+                    assert(listn(args) >= 2);
+                    Expr *pat = car(args);
+                    Expr *exprs = cdr(args);
+                    Expr *name;
+                    Expr *value;
+                    if(is_sym(pat)) {
+                        assert(listn(args) == 2);
+                        name = pat;
+                        stack = make_frame(stack, env, make_nil());
+                        list_set(stack, 2, op);
+                        list_set(stack, 4, name);
+                        expr = car(exprs);
+                        continue;
+                    }
+                    else if(is_pair(pat)) {
+                        Expr *params = cdr(pat);
+                        Expr *body = exprs;
+                        name = car(pat);
+                        value = make_closure(env, params, body);
+                        env_bind(env, name, value);
+                        result = value;
+                    }
+                }
+                else if(sym_is(op, "macro")) {
+                    assert(listn(args) >= 2);
+                    Expr *pat = car(args);
+                    Expr *exprs = cdr(args);
+                    Expr *name;
+                    Expr *value;
+                    if(is_pair(pat)) {
+                        Expr *params = cdr(pat);
+                        Expr *body = exprs;
+                        name = car(pat);
+                        value = make_macro(env, params, body);
+                        env_bind(env, name, value);
+                        result = name;
+                    }
+                    else {
+                        fatal_error("Macro can only be a function");
+                    }
+                }
+                else if(sym_is(op, "if")) {
+                    stack = make_frame(stack, env, cdr(args));
+                    list_set(stack, 2, op);
+                    expr = car(args);
+                    continue;
+                }
+                else if(sym_is(op, "\\")) {
+                    assert(listn(args) >= 2);
+                    Expr *params = car(args);
+                    Expr *body = cdr(args);
+                    result = make_closure(env, params, body);
+                }
+                else if(sym_is(op, "inc")) {
+                    Expr *result;
+                    assert(!is_nil(args));
+                    foreach(arg, args) {
+                        Expr *arg = car(args);
+                        assert(is_str(arg));
+                        char *filename = val_str(arg);
+                        result = run_file(env, filename);
+                    }
+                    return result;
+                }
+                else if(sym_is(op, "apply")) {
+                    stack = make_frame(stack, env, cdr(args));
+                    list_set(stack, 2, op);
+                    expr = car(args);
+                    continue;
+                }
+                else {
+                    goto push;
                 }
             }
-            assert(is_nil(cases));
-            return make_nil();
-        }
-        else if(sym_is(op, "if")) {
-            Expr *cond = eval(env, car(args));
-            Expr *branch1 = car(cdr(args));
-            Expr *branch0 = car(cdr(cdr(args)));
-            if(val_bool(cond)) return eval(env, branch1);
-            else               return eval(env, branch0);
-        }
-        else if(sym_is(op, "and")) {
-            Expr *first = eval(env, car(args));
-            if(!val_bool(first)) return make_bool(false);
-            else return eval(env, car(cdr(args)));
-        }
-        else if(sym_is(op, "or")) {
-            Expr *first = eval(env, car(args));
-            if(val_bool(first)) return make_bool(true);
-            else return eval(env, car(cdr(args)));
-        }
-        else if(sym_is(op, "not")) {
-            return make_bool(!val_bool(eval(env, car(args))));
-        }
-        else if(sym_is(op, "do")) {
-            Expr *last = make_nil();
-            Expr *expr_list = args;
-            foreach(expr, expr_list) {
-                last = eval(env, expr);
+            else if(is_func(op)) {
+                result = func(op)(args);
             }
-            return last;
-        }
-        else if(sym_is(op, "inc")) {
-            Expr *result;
-            assert(!is_nil(args));
-            foreach(arg, args) {
-                Expr *arg = car(args);
-                assert(is_str(arg));
-                char *filename = val_str(arg);
-                result = run_file(env, filename);
+            else {
+push:
+                stack = make_frame(stack, env, args);
+                expr = op;
+                continue;
             }
-            return result;
+            // Expr *func = eval(env, op);
+            // Expr *evargs = evlist(env, args);
+            // Expr *computed = apply(func, evargs);
+            // assert(computed != nil);
+            // return computed;
         }
-        else if(sym_is(op, "eval")) {
-            Expr *expr = list_ith(args, 0);
-            return eval(env, expr);
+        if(is_nil(stack)) {
+            break;
         }
-    }
-
-    Expr *func = eval(env, op);
-    Expr *evargs = evlist(env, args);
-    Expr *computed = apply(func, evargs);
-    assert(computed != nil);
-    return computed;
+        expr = eval_do_return(&stack, &env, &result);
+    } while(true);
+    return result;
 }
 
 // Expression printing
@@ -533,7 +669,14 @@ static Expr *eval(Expr *env, Expr *expr)
 static Expr *expr_print(Expr *expr)
 {
     // Special data
-    if(is_closure(expr)) {
+    if(is_macro(expr)) {
+        printf("<macro ");
+        expr_print(closure_params(expr));
+        putchar(' ');
+        expr_print(closure_body(expr));
+        printf(">");
+    }
+    else if(is_closure(expr)) {
         printf("<closure ");
         expr_print(closure_params(expr));
         putchar(' ');

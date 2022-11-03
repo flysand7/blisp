@@ -457,14 +457,6 @@ static Expr *f_cdr(Expr *args)
     return cdr(expr);
 }
 
-static Expr *f_apply(Expr *args)
-{
-    assert(listn(args) == 2);
-    Expr *op   = list_ith(args, 0);
-    Expr *pars = list_ith(args, 1);
-    return apply(op, pars);
-}
-
 static Expr *f_print(Expr *args)
 {
     Expr *last = make_nil();

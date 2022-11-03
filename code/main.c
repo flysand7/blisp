@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     if(repl_mode) {
         for(;;) {
             char input[128];
-            
+
             putchar('\n');
             putchar('>');
             gets_s(input, sizeof input);
