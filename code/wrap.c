@@ -465,6 +465,7 @@ static Expr *f_print(Expr *args)
         putchar(' ');
     }
     putchar('\n');
+    fflush(stdout);
     return last;
 }
 

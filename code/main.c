@@ -19,9 +19,11 @@
 
 int main(int argc, char **argv)
 {
+    setbuf(stdout, 0);
     Parser p = {0};
 
     Expr *env = env_default(make_nil());
+    run_file(env, "lisp/ext-scheme.lsp");
 
     bool repl_mode = false;
     char *filename = "lisp/default.lsp";
@@ -56,5 +58,6 @@ int main(int argc, char **argv)
         run_file(env, filename);
     }
 
+    fflush(stdout);
     return 0;
 }

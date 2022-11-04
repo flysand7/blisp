@@ -351,7 +351,9 @@ static Expr *env_lookup(Expr *env, Expr *symbol)
             return bind_val(bind);
         }
     };
-    if(is_nil(env_parent(env))) return nil;
+    if(is_nil(env_parent(env))) {
+        return nil;
+    }
     return env_lookup(env_parent(env), symbol);
 }
 

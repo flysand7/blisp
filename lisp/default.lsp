@@ -1,7 +1,4 @@
 
-(def (count n a)
-  (if (int-eq? n 0)
-      a
-      (count (int-sub n 1) (int-add a 1))))
+(inc "lisp/math.lsp")
 
-(count 100000 0)
+(print (+ 2 2))

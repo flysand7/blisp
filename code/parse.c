@@ -8,6 +8,9 @@ typedef enum TokenType {
     TOKEN_FLOAT,
     TOKEN_STRING,
     TOKEN_QUOTE,
+    TOKEN_QUASIQUOTE,
+    TOKEN_UNQUOTE,
+    TOKEN_UNQUOTE_SPLICING,
     TOKEN_COMMA,
     TOKEN_DOT,
 } TokenType;
@@ -235,8 +238,14 @@ void parse_next_token(Parser *p)
     else if(lex_match(p, '\'')) {
         token_type(p) = TOKEN_QUOTE;
     }
+    else if(lex_match(p, '`')) {
+        token_type(p) = TOKEN_QUASIQUOTE;
+    }
     else if(lex_match(p, ',')) {
-        token_type(p) = TOKEN_COMMA;
+        token_type(p) = TOKEN_UNQUOTE;
+        if(lex_match(p, '@')) {
+            token_type(p) = TOKEN_UNQUOTE_SPLICING;
+        }
     }
     else if(lex_match(p, '.')) {
         token_type(p) = TOKEN_DOT;
@@ -253,7 +262,6 @@ void parse_next_token(Parser *p)
 }
 
 #define token_is_quote(p)  (token_type(p) == TOKEN_QUOTE)
-#define token_is_comma(p)  (token_type(p) == TOKEN_COMMA)
 #define token_is_dot(p)    (token_type(p) == TOKEN_DOT)
 #define token_is_lparen(p) (token_type(p) == TOKEN_LPAREN)
 #define token_is_rparen(p) (token_type(p) == TOKEN_RPAREN)
@@ -273,11 +281,14 @@ bool token_match(Parser *p, TokenType t)
     return false;
 }
 
-#define token_match_quote(p)  token_match(p, TOKEN_QUOTE)
-#define token_match_comma(p)  token_match(p, TOKEN_COMMA)
-#define token_match_dot(p)    token_match(p, TOKEN_DOT)
-#define token_match_lparen(p) token_match(p, TOKEN_LPAREN)
-#define token_match_rparen(p) token_match(p, TOKEN_RPAREN)
+#define token_match_quote(p)            token_match(p, TOKEN_QUOTE)
+#define token_match_quasiquote(p)       token_match(p, TOKEN_QUASIQUOTE)
+#define token_match_unquote(p)          token_match(p, TOKEN_UNQUOTE)
+#define token_match_unquote_splicing(p) token_match(p, TOKEN_UNQUOTE_SPLICING)
+#define token_match_comma(p)            token_match(p, TOKEN_COMMA)
+#define token_match_dot(p)              token_match(p, TOKEN_DOT)
+#define token_match_lparen(p)           token_match(p, TOKEN_LPAREN)
+#define token_match_rparen(p)           token_match(p, TOKEN_RPAREN)
 
 void parser_init(Parser *p, char *fname, char *text)
 {
@@ -333,6 +344,18 @@ Expr *parse_expr(Parser *p)
     else if(token_match_quote(p)) {
         Expr *arg = parse_expr(p);
         return cons(make_sym("quote"), cons(arg, make_nil()));
+    }
+    else if(token_match_quasiquote(p)) {
+        Expr *arg = parse_expr(p);
+        return cons(make_sym("quasiquote"), cons(arg, make_nil()));
+    }
+    else if(token_match_unquote(p)) {
+        Expr *arg = parse_expr(p);
+        return cons(make_sym("unquote"), cons(arg, make_nil()));
+    }
+    else if(token_match_unquote_splicing(p)) {
+        Expr *arg = parse_expr(p);
+        return cons(make_sym("unquote-splicing"), cons(arg, make_nil()));
     }
     else if(token_is_eof(p)) {
         parse_fatal_error(p, "Unexpected EOF.");
