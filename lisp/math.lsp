@@ -68,8 +68,8 @@
   (mul list))
 
 (def - gen-sub)
-(def / gen-div)
-(def /. cflt-div)
+(def // gen-div)
+(def /  cflt-div)
 
 (def =  gen-eq?)
 (def != gen-neq?)
@@ -103,3 +103,9 @@
   (if (< n 0)
     (- 0 n)
     n))
+
+(def (square x)
+  (* x x))
+
+(def (average . list)
+  (/ (sum list) (len list)))

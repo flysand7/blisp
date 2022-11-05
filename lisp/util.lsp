@@ -31,3 +31,8 @@
   (if (int-eq? lo hi)
     (cons lo nil)
     (cons lo (range (int-add 1 lo) hi))))
+
+(def (len list)
+  (if (nil? list)
+    0
+    (int-add 1 (len (cdr list)))))

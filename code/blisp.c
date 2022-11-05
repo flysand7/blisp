@@ -282,6 +282,8 @@ static Expr *env_default(Expr *parent)
     Expr *env = env_create(parent);
 
     env_bind(env, make_sym("nil"),         make_nil());
+    env_bind(env, make_sym("inf"),         make_flt(INFINITY));
+    env_bind(env, make_sym("nan"),         make_flt(NAN));
 
     env_bind(env, make_sym("int?"),        make_func(f_is_int));
     env_bind(env, make_sym("flt?"),        make_func(f_is_flt));

@@ -48,7 +48,7 @@
   (if (pair? x)
     (if (is-sym-eq? (car x) 'unquote)
       (cadr x)
-      (if (is-sym-eq? (car x) 'unquote-splicing)
+      (if (is-sym-eq? (caar x) 'unquote-splicing)
         (list 'append
           (cadr (car x))
           (list 'quasiquote (cdr x)))
@@ -61,3 +61,4 @@
 (macro (binary-or  A B) `(if ,A 1 (if ,B 1 0)))
 (def   (not A) (if A 0 1))
 
+(inc "lisp/math.lsp")
