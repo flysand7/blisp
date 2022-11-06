@@ -107,8 +107,18 @@
 (def (square x)
   (* x x))
 
-(def (% a b)
-  (int-rem a b))
 
 (def (average . list)
   (/ (sum list) (len list)))
+
+(def (% a b)
+  (int-rem a b))
+
+(def (gcd a b)
+  (if (= b 0)
+    a
+    (gcd b (% a b))))
+
+(def (lcm a b)
+  (// (* a b) (gcd a b)))
+
