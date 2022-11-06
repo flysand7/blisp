@@ -77,5 +77,10 @@
            ,(cadr (car clauses))
            (cond ,@(cdr clauses)))))
 
+(macro (do . stmts)
+  `((\ () ,@stmts)))
+
+(def else 1)
+
 (inc "lisp/math.lsp")
 
