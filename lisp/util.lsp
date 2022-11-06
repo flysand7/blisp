@@ -36,3 +36,9 @@
   (if (nil? list)
     0
     (int-add 1 (len (cdr list)))))
+
+(def (count list) (len list))
+
+(def (rest list) (cdr list))
+
+(def (first list) (car list))

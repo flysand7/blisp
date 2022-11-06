@@ -7,9 +7,8 @@
         ((same-var? expr v)
           1)
         ((sum? expr)
-          (do
             (make-sum (d/dv (a1 expr) v)
-                      (d/dv (a2 expr) v))))
+                      (d/dv (a2 expr) v)))
         ((prod? expr)
           (make-sum (make-prod (m1 expr)
                                (d/dv (m2 expr) v))

@@ -44,21 +44,38 @@
       0)
     0))
 
+(def (unquote? x)
+  (if (is-sym-eq? (car x) 'unquote) 1 0))
+
+(def (unquote-splicing? x)
+  (if (pair? (car x))
+    (if (is-sym-eq? (caar x) 'unquote-splicing)
+      1
+      0)
+    0))
+
 (macro (quasiquote x)
   (if (pair? x)
-    (if (is-sym-eq? (car x) 'unquote)
-      (cadr x)
-      (if (is-sym-eq? (caar x) 'unquote-splicing)
-        (list 'append
-          (cadr (car x))
-          (list 'quasiquote (cdr x)))
-        (list 'cons
-          (list 'quasiquote (car x))
-          (list 'quasiquote (cdr x)))))
-    (list 'quote x)))
+      (if (unquote? x)
+          (cadr x)
+          (if (unquote-splicing? x)
+              (list 'append
+                    (cadr (car x))
+                    (list 'quasiquote (cdr x)))
+              (list 'cons
+                    (list 'quasiquote (car x))
+                    (list 'quasiquote (cdr x)))))
+      (list 'quote x)))
 
 (macro (binary-and A B) `(if ,A (if ,B 1 0) 0))
 (macro (binary-or  A B) `(if ,A 1 (if ,B 1 0)))
 (def   (not A) (if A 0 1))
 
+(macro (cond . clauses)
+  (if (pair? clauses)
+      `(if ,(caar clauses)
+           ,(cadr (car clauses))
+           (cond ,@(cdr clauses)))))
+
 (inc "lisp/math.lsp")
+
