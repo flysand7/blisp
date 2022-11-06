@@ -9,7 +9,7 @@ static void fatal_error(char *msg, ...)
     printf("[eval]: ");
     vprintf(msg, args);
     putchar('\n');
-    exit(1);
+    longjmp(error_return_buf, 1);
     va_end(args);
 }
 

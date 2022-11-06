@@ -51,6 +51,8 @@ struct Alloc {
     Alloc *next;
 };
 
+jmp_buf error_return_buf;
+
 #define      kind(expr) (expr)->kind
 #define      atom(expr) (expr)->atom
 

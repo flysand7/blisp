@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <math.h>
+#include <setjmp.h>
 
 #include "blisp.h"
 
@@ -41,21 +42,23 @@ int main(int argc, char **argv)
     if(repl_mode) {
         for(;;) {
             char input[128];
-
+            if(setjmp(error_return_buf)) {
+            }
             putchar('\n');
             putchar('>');
             gets_s(input, sizeof input);
-
             parser_init(&p, "repl@stdin", input);
-
-            Expr *code = parse_expr(&p);
-            Expr *result = eval(env, code);
-
-            expr_print(result);
+            Expr *code = parse_root_expr(&p);
+            if(code != nil) {
+                Expr *result = eval(env, code);
+                expr_print(result);
+            }
         }
     }
     else {
-        run_file(env, filename);
+        if(!setjmp(error_return_buf)) {
+            run_file(env, filename);
+        }
     }
 
     fflush(stdout);

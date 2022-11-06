@@ -39,7 +39,7 @@ static void parse_fatal_error(Parser *p, char *msg, ...)
     printf("%s(%lld:%lld) [parse]: ", p->fname, p->line+1, p->col+1);
     vprintf(msg, args);
     putchar('\n');
-    exit(1);
+    longjmp(error_return_buf, 1);
     va_end(args);
 }
 
@@ -363,6 +363,14 @@ Expr *parse_expr(Parser *p)
     else assert(false);
 
     return nil;
+}
+
+Expr *parse_root_expr(Parser *p)
+{
+    if(token_is_eof(p)) {
+        return nil;
+    }
+    return parse_expr(p);
 }
 
 char *read_file(char *filename)
