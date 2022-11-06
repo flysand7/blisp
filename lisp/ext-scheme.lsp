@@ -77,10 +77,13 @@
            ,(cadr (car clauses))
            (cond ,@(cdr clauses)))))
 
+(def else 1)
+
 (macro (do . stmts)
   `((\ () ,@stmts)))
 
-(def else 1)
+; (macro (let defs . body)
+;   `((\ ,(map car defs) ,@body)
+;     ,@(map cadr defs)))
 
 (inc "lisp/math.lsp")
-

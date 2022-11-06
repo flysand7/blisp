@@ -107,5 +107,8 @@
 (def (square x)
   (* x x))
 
+(def (% a b)
+  (int-rem a b))
+
 (def (average . list)
   (/ (sum list) (len list)))

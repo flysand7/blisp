@@ -21,6 +21,10 @@ static void expr_to_atom(Expr *expr)
 static Expr *new_expr(ExprKind kind, bool atomic)
 {
     Alloc *alloc = calloc(1, sizeof(Alloc));
+    if(alloc == nil) {
+        printf("FATAL: can't allocate memory\n");
+        exit(1);
+    }
     alloc->mark = 0;
     alloc->next = global_allocs;
     global_allocs = alloc;
