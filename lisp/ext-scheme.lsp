@@ -86,4 +86,4 @@
 ;   `((\ ,(map car defs) ,@body)
 ;     ,@(map cadr defs)))
 
-(inc "lisp/math.lsp")
+(include "lisp/math.lsp")

@@ -1,6 +1,4 @@
 
-(inc "lisp/math.lsp")
-
 (def (d/dv expr v)
   (cond ((const? expr v)
           0)

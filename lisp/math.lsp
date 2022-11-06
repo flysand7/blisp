@@ -1,4 +1,4 @@
-(inc "lisp/util.lsp")
+(include "lisp/util.lsp")
 
 (def (gen-f int-f flt-f p1 p2)
   (if (int? p1)
@@ -122,3 +122,17 @@
 (def (lcm a b)
   (// (* a b) (gcd a b)))
 
+(def (prime? n)
+  (def (divides? a b)
+    (= (% b a) 0))
+  (def (find-smallest-divisor n test)
+    (cond
+      ((> (square test) n)
+        n)
+      ((divides? test n) test)
+      (else (find-smallest-divisor n (inc test)))))
+  (def (smallest-divisor n)
+    (find-smallest-divisor n 2))
+  (= (smallest-divisor n) n))
+
+(print (map (range 0 10) (\ (n) `(,n ,(prime? n)))))

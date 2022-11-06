@@ -636,7 +636,7 @@ static Expr *eval(Expr *env, Expr *expr)
                     Expr *body = cdr(args);
                     result = make_closure(env, params, body);
                 }
-                else if(sym_is(op, "inc")) {
+                else if(sym_is(op, "include")) {
                     Expr *result;
                     assert(!is_nil(args));
                     foreach(arg, args) {
