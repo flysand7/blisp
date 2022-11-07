@@ -173,7 +173,7 @@ void lex_literal(Parser *p)
 
     // Try parsing an integer
     errno = 0;
-    i64 ivalue = strtoll(lit, &end, 10);
+    i64 ivalue = strtoll(lit, &end, 0);
     if(errno == ERANGE) {
         parse_fatal_error(p, "Value %s is too big for an int.", lit);
     }

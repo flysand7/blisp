@@ -134,5 +134,3 @@
   (def (smallest-divisor n)
     (find-smallest-divisor n 2))
   (= (smallest-divisor n) n))
-
-(print (map (range 0 10) (\ (n) `(,n ,(prime? n)))))

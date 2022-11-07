@@ -457,6 +457,23 @@ static Expr *f_cdr(Expr *args)
     return cdr(expr);
 }
 
+static Expr *f_input_char(Expr *args)
+{
+    assert(listn(args) == 0);
+    int char_value = getchar();
+    assert(char_value != EOF);
+    return make_int(char_value);
+}
+
+static Expr *f_print_char(Expr *args)
+{
+    assert(listn(args) == 1);
+    Expr *expr = list_ith(args, 0);
+    assert(is_int(expr));
+    putchar(val_int(expr));
+    return make_int(val_int(expr));
+}
+
 static Expr *f_print(Expr *args)
 {
     Expr *last = make_nil();

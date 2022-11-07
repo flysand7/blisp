@@ -344,6 +344,8 @@ static Expr *env_default(Expr *parent)
     env_bind(env, make_sym("cdr"),         make_func(f_cdr));
     env_bind(env, make_sym("cons"),        make_func(f_cons));
 
+    env_bind(env, make_sym("print-ch"),     make_func(f_print_char));
+    env_bind(env, make_sym("input-ch"),     make_func(f_input_char));
     env_bind(env, make_sym("print"),       make_func(f_print));
     return env;
 }
