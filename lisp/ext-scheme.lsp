@@ -75,7 +75,8 @@
   (if (pair? clauses)
       `(if ,(caar clauses)
            ,(cadr (car clauses))
-           (cond ,@(cdr clauses)))))
+           (cond ,@(cdr clauses)))
+        0))
 
 (def else 1)
 

@@ -420,44 +420,44 @@ static Expr *make_frame(Expr *parent, Expr *env, Expr *tail)
 static Expr *eval_do_exec(Expr **stack, Expr **env)
 {
     Expr *body;
-    *env = list_ith(*stack, 1);
-    body = list_ith(*stack, 5);
+    *env = frame_env(*stack);
+    body = frame_body(*stack);
     Expr *expr = car(body);
     body = cdr(body);
     if(is_nil(body)) {
         *stack = car(*stack);
     }
     else {
-        list_set(*stack, 5, body);
+        frame_body(*stack) = body;
     }
     return expr;
 }
 
 static Expr *eval_do_bind(Expr **stack, Expr **env)
 {
-    Expr *body = list_ith(*stack, 5);
+    Expr *body = frame_body(*stack);
     if(!is_nil(body)) {
         return eval_do_exec(stack, env);
     }
-    Expr *op = list_ith(*stack, 2);
-    Expr *args = list_ith(*stack, 4);
+    Expr *op = frame_ev_op(*stack);
+    Expr *args = frame_ev_arg(*stack);
     *env = env_create(closure_env(op));
     Expr *pars = closure_params(op);
     body = closure_body(op);
-    list_set(*stack, 1, *env);
-    list_set(*stack, 5, body);
+    frame_env(*stack) = *env;
+    frame_body(*stack) = body;
     bind_pars(*env, pars, args);
-    list_set(*stack, 4, make_nil());
+    frame_ev_arg(*stack) = make_nil();
     return eval_do_exec(stack, env);
 }
 
 static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
 {
-    Expr *op = list_ith(*stack, 2);
-    Expr *args = list_ith(*stack, 4);
+    Expr *op = frame_ev_op(*stack);
+    Expr *args = frame_ev_arg(*stack);
     if(!is_nil(args)) {
         list_reverse(&args);
-        list_set(*stack, 4, args);
+        frame_ev_arg(*stack) = args;
     }
     if(is_sym(op)) {
         // instead of (apply, op, (args)) we execute (op, args)
@@ -469,12 +469,12 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
             if(!is_list(args)) {
                 fatal_error("Symbol '%s' is not defined", val_str(args));
             }
-            list_set(*stack, 2, op);
-            list_set(*stack, 4, args);
+            frame_ev_op(*stack) = op;
+            frame_ev_arg(*stack) = args;
         }
     }
     if(is_func(op)) {
-        *stack = car(*stack);
+        *stack = frame_parent(*stack);
         return cons(op, args);
     }
     else if(is_closure(op)) {
@@ -489,33 +489,33 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
 }
 
 static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
-    *env = list_ith(*stack, 1);
-    Expr *op = list_ith(*stack, 2);
-    Expr *body = list_ith(*stack, 5);
+    *env = frame_env(*stack);
+    Expr *op = frame_ev_op(*stack);
+    Expr *body = frame_body(*stack);
     if(!is_nil(body)) {
         return eval_do_apply(stack, env, result);
     }
     if(is_nil(op)) {
         op = *result;
-        list_set(*stack, 2, op);
+        frame_ev_op(*stack) = op;
         if(is_macro(op)) {
-            Expr *args = list_ith(*stack, 3);
+            Expr *args = frame_arg(*stack);
             *stack = make_frame(*stack, *env, make_nil());
             op->macro = true;
-            list_set(*stack, 2, op);
-            list_set(*stack, 4, args);
+            frame_ev_op(*stack) = op;
+            frame_ev_arg(*stack);
             return eval_do_bind(stack, env);
         }
     }
     else if(is_sym(op)) {
         if(sym_is(op, "def")) {
-            Expr *name = list_ith(*stack, 4);
-            env_bind(*env, name, *result);
+            Expr *pattern = frame_ev_arg(*stack);
+            env_bind(*env, pattern, *result);
             *stack = car(*stack);
-            return cons(make_sym("quote"), cons(name, make_nil()));
+            return cons(make_sym("quote"), cons(pattern, make_nil()));
         }
         else if(sym_is(op, "if")) {
-            Expr *args = list_ith(*stack, 3);
+            Expr *args = frame_arg(*stack);
             *stack = car(*stack);
             if(!is_int(*result)) {
                 fatal_error("The if condition must be a bool.");
@@ -532,14 +532,14 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
     }
     else {
 store_arg:;
-        Expr *args = list_ith(*stack, 4);
-        list_set(*stack, 4, cons(*result, args));
+        Expr *args = frame_ev_arg(*stack);
+        frame_ev_arg(*stack) = cons(*result, args);
     }
-    Expr *args = list_ith(*stack, 3);
+    Expr *args = frame_arg(*stack);
     if(is_nil(args)) {
         return eval_do_apply(stack, env, result);
     }
-    list_set(*stack, 3, cdr(args));
+    frame_arg(*stack) = cdr(args);
     return car(args);
 }
 
@@ -596,8 +596,8 @@ static Expr *eval(Expr *env, Expr *expr)
                         assert(listn(args) == 2);
                         name = pat;
                         stack = make_frame(stack, env, make_nil());
-                        list_set(stack, 2, op);
-                        list_set(stack, 4, name);
+                        frame_ev_op(stack) = op;
+                        frame_ev_arg(stack) = name;
                         expr = car(exprs);
                         continue;
                     }
@@ -630,8 +630,16 @@ static Expr *eval(Expr *env, Expr *expr)
                 }
                 else if(sym_is(op, "if")) {
                     stack = make_frame(stack, env, cdr(args));
-                    list_set(stack, 2, op);
+                    frame_ev_op(stack) = op;
                     expr = car(args);
+                    if(is_nil(list_ith(args, 1))) {
+                        printf("Error: missing if true clause");
+                        exit(1);
+                    }
+                    else if(is_nil(list_ith(args, 2))) {
+                        printf("Error: missing if false clause");
+                        exit(1);
+                    }
                     continue;
                 }
                 else if(sym_is(op, "\\")) {
@@ -656,7 +664,7 @@ static Expr *eval(Expr *env, Expr *expr)
                 }
                 else if(sym_is(op, "apply")) {
                     stack = make_frame(stack, env, cdr(args));
-                    list_set(stack, 2, op);
+                    frame_ev_op(stack) = op;
                     expr = car(args);
                     continue;
                 }

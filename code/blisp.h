@@ -130,7 +130,6 @@ static Expr *make_macro(Expr *env, Expr *pars, Expr *body);
 #define      macro_params(macro)     list_ith(macro, 2)
 #define      macro_body(macro)       list_ith(macro, 3)
 
-
 // Environment
 static Expr *env_create(Expr *parent);
 static Expr *env_default(Expr *parent);
@@ -140,6 +139,15 @@ static void  env_bind(Expr *env, Expr *symbol, Expr *value);
 #define      env_bindings(env) cdr(env)
 #define      bind_sym(bind)    car(bind)
 #define      bind_val(bind)    cdr(bind)
+
+// Stack frame
+static Expr *make_frame(Expr *parent, Expr *env, Expr *tail);
+#define frame_parent(frame) car(frame)
+#define frame_env(frame)    car(cdr(frame))
+#define frame_ev_op(frame)  car(cdr(cdr(frame)))
+#define frame_arg(frame)    car(cdr(cdr(cdr(frame))))
+#define frame_ev_arg(frame) car(cdr(cdr(cdr(cdr(frame)))))
+#define frame_body(frame)   car(cdr(cdr(cdr(cdr(cdr(frame))))))
 
 // Evaluator
 static Expr *eval(Expr *env, Expr *expr);
