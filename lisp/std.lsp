@@ -1,5 +1,5 @@
 
-(print "[blisp] Default extension loaded")
+(print "[blisp] standard extension loaded")
 
 (def (caar x) (car (car x)))
 (def (cadr x) (car (cdr x)))

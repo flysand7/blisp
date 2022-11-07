@@ -141,13 +141,14 @@ static void  env_bind(Expr *env, Expr *symbol, Expr *value);
 #define      bind_val(bind)    cdr(bind)
 
 // Stack frame
-static Expr *make_frame(Expr *parent, Expr *env, Expr *tail);
+static Expr *make_frame(Expr *parent, Expr *env, Expr *op, Expr *args);
 #define frame_parent(frame) car(frame)
 #define frame_env(frame)    car(cdr(frame))
-#define frame_ev_op(frame)  car(cdr(cdr(frame)))
+#define frame_op(frame)     car(cdr(cdr(frame)))
 #define frame_arg(frame)    car(cdr(cdr(cdr(frame))))
-#define frame_ev_arg(frame) car(cdr(cdr(cdr(cdr(frame)))))
-#define frame_body(frame)   car(cdr(cdr(cdr(cdr(cdr(frame))))))
+#define frame_ev_op(frame)  car(cdr(cdr(cdr(cdr(frame)))))
+#define frame_ev_arg(frame) car(cdr(cdr(cdr(cdr(cdr(frame))))))
+#define frame_body(frame)   car(cdr(cdr(cdr(cdr(cdr(cdr(frame)))))))
 
 // Evaluator
 static Expr *eval(Expr *env, Expr *expr);

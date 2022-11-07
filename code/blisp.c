@@ -404,13 +404,14 @@ static void bind_pars(Expr *env, Expr *pars, Expr *args)
     }
 }
 
-static Expr *make_frame(Expr *parent, Expr *env, Expr *tail)
+static Expr *make_frame(Expr *parent, Expr *env, Expr *op, Expr *args)
 {
     return list(7,
         parent,
         env,
+        op,
+        args,
         make_nil(),
-        tail,
         make_nil(),
         make_nil(),
         make_nil()
@@ -463,7 +464,7 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
         // instead of (apply, op, (args)) we execute (op, args)
         if(sym_is(op, "apply")) {
             *stack = car(*stack);
-            *stack = make_frame(*stack, *env, make_nil());
+            *stack = make_frame(*stack, *env, op, make_nil());
             op = car(args);
             args = car(cdr(args));
             if(!is_list(args)) {
@@ -500,7 +501,7 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
         frame_ev_op(*stack) = op;
         if(is_macro(op)) {
             Expr *args = frame_arg(*stack);
-            *stack = make_frame(*stack, *env, make_nil());
+            *stack = make_frame(*stack, *env, op, make_nil());
             op->macro = true;
             frame_ev_op(*stack) = op;
             frame_ev_arg(*stack);
@@ -595,7 +596,7 @@ static Expr *eval(Expr *env, Expr *expr)
                     if(is_sym(pat)) {
                         assert(listn(args) == 2);
                         name = pat;
-                        stack = make_frame(stack, env, make_nil());
+                        stack = make_frame(stack, env, op, make_nil());
                         frame_ev_op(stack) = op;
                         frame_ev_arg(stack) = name;
                         expr = car(exprs);
@@ -629,7 +630,7 @@ static Expr *eval(Expr *env, Expr *expr)
                     }
                 }
                 else if(sym_is(op, "if")) {
-                    stack = make_frame(stack, env, cdr(args));
+                    stack = make_frame(stack, env, op, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
                     if(!is_nil(cdr(args))) {
@@ -669,7 +670,7 @@ static Expr *eval(Expr *env, Expr *expr)
                     return result;
                 }
                 else if(sym_is(op, "apply")) {
-                    stack = make_frame(stack, env, cdr(args));
+                    stack = make_frame(stack, env, op, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
                     continue;
@@ -683,7 +684,7 @@ static Expr *eval(Expr *env, Expr *expr)
             }
             else {
 push:
-                stack = make_frame(stack, env, args);
+                stack = make_frame(stack, env, op, args);
                 expr = op;
                 continue;
             }

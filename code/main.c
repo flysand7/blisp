@@ -24,23 +24,17 @@ int main(int argc, char **argv)
     Parser p = {0};
 
     Expr *env = env_default(make_nil());
-    if(!run_file(env, "lisp/ext-scheme.lsp")) {
-        printf("[warning]: lisp/ext-scheme wasn't loaded.");
+    if(!run_file(env, "lisp/std.lsp")) {
+        printf("[warning]: lisp/std.lsp wasn't loaded.");
     }
 
-    bool repl_mode = false;
-    char *filename = "lisp/default.lsp";
+    bool repl_mode = true;
+    char *filename;
     if(argc == 2) {
         char *arg = argv[1];
-        if(strcmp(arg, "/r") == 0) {
-            repl_mode = true;
-        }
-        else {
-            repl_mode = false;
-            filename = arg;
-        }
+        repl_mode = false;
+        filename = arg;
     }
-
     if(repl_mode) {
         for(;;) {
             char input[128];
