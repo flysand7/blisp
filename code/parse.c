@@ -394,8 +394,7 @@ static Expr *run_file(Expr *env, char *filename)
     Parser p;
     char *text = read_file(filename);
     if(text == nil) {
-        fprintf(stderr, "File %s couldn't be read\n", filename);
-        exit(1);
+        return nil;
     }
     Expr *result = make_nil();
     parser_init(&p, filename, text);

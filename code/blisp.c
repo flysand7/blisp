@@ -632,13 +632,15 @@ static Expr *eval(Expr *env, Expr *expr)
                     stack = make_frame(stack, env, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
-                    if(is_nil(list_ith(args, 1))) {
-                        printf("Error: missing if true clause");
-                        exit(1);
-                    }
-                    else if(is_nil(list_ith(args, 2))) {
-                        printf("Error: missing if false clause");
-                        exit(1);
+                    if(!is_nil(cdr(args))) {
+                        if(is_nil(car(cdr(args)))) {
+                            printf("Error: missing if true clause");
+                            exit(1);
+                        }
+                        else if(is_nil(cdr(cdr(args)))) {
+                            printf("Error: missing if false clause");
+                            exit(1);
+                        }
                     }
                     continue;
                 }
@@ -658,6 +660,10 @@ static Expr *eval(Expr *env, Expr *expr)
                         Expr *stack_frame = list(3, arg, stack, expr);
                         file_stack = cons(stack_frame, file_stack);
                         result = run_file(env, filename);
+                        if(result == nil) {
+                            printf("[error]: file %s isn't found\n", filename);
+                            exit(1);
+                        }
                         file_stack = cdr(file_stack);
                     }
                     return result;

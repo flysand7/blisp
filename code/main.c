@@ -24,7 +24,9 @@ int main(int argc, char **argv)
     Parser p = {0};
 
     Expr *env = env_default(make_nil());
-    run_file(env, "lisp/ext-scheme.lsp");
+    if(!run_file(env, "lisp/ext-scheme.lsp")) {
+        printf("[warning]: lisp/ext-scheme wasn't loaded.");
+    }
 
     bool repl_mode = false;
     char *filename = "lisp/default.lsp";
@@ -57,7 +59,10 @@ int main(int argc, char **argv)
     }
     else {
         if(!setjmp(error_return_buf)) {
-            run_file(env, filename);
+            if(!run_file(env, filename)) {
+                printf("[error]: file %s isn't found\n", filename);
+                exit(1);
+            }
         }
     }
 
