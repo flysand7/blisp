@@ -546,6 +546,7 @@ store_arg:;
 static Expr *eval(Expr *env, Expr *expr)
 {
     Expr *stack = make_nil();
+    Expr *file_stack = make_nil();
     Expr *result;
     int gc_counter = 0;
     do {
@@ -553,6 +554,7 @@ static Expr *eval(Expr *env, Expr *expr)
             gc_mark(expr);
             gc_mark(env);
             gc_mark(stack);
+            gc_mark(file_stack);
             gc_sweep();
             gc_counter = 0;
         }
@@ -645,7 +647,10 @@ static Expr *eval(Expr *env, Expr *expr)
                         Expr *arg = car(args);
                         assert(is_str(arg));
                         char *filename = val_str(arg);
+                        Expr *stack_frame = list(3, arg, stack, expr);
+                        file_stack = cons(stack_frame, file_stack);
                         result = run_file(env, filename);
+                        file_stack = cdr(file_stack);
                     }
                     return result;
                 }
@@ -668,11 +673,6 @@ push:
                 expr = op;
                 continue;
             }
-            // Expr *func = eval(env, op);
-            // Expr *evargs = evlist(env, args);
-            // Expr *computed = apply(func, evargs);
-            // assert(computed != nil);
-            // return computed;
         }
         if(is_nil(stack)) {
             break;
