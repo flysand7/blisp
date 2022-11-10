@@ -551,7 +551,7 @@ static Expr *eval(Expr *env, Expr *expr)
     Expr *result;
     int gc_counter = 0;
     do {
-        if(++gc_counter == 1000) {
+        if(++gc_counter == 1000000) {
             gc_mark(expr);
             gc_mark(env);
             gc_mark(stack);

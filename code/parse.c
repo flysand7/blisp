@@ -217,7 +217,7 @@ void lex_str(Parser *p)
     if(!lex_match(p, '"')) {
         parse_fatal_error(p, "Unterminated string literal.");
     }
-    str = realloc(str, str_len);
+    str = realloc(str, str_len+1);
     str[str_len] = 0;
     token_type(p) = TOKEN_STRING;
     token_str_value(p) = str;

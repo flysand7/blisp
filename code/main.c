@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <math.h>
 #include <setjmp.h>
+#include <signal.h>
 
 #include "blisp.h"
 
@@ -18,9 +19,34 @@
 #include "parse.c"
 #include "blisp.c"
 
+static char const *signal_name(int signal) {
+    switch(signal) {
+        case SIGABRT: return "SIGABRT";
+        case SIGFPE:  return "SIGFPE";
+        case SIGILL:  return "SIGILL";
+        case SIGINT:  return "SIGINT";
+        case SIGSEGV: return "SIGSEGV";
+        case SIGTERM: return "SIGTERM";
+    }
+    return "UNKNOWN";
+}
+
+static void abort_handler(int signal)
+{
+    printf("[%s]: Program has been terminated\n", signal_name(signal));
+    exit(1);
+}
+
+
 int main(int argc, char **argv)
 {
-    setbuf(stdout, 0);
+    signal(SIGABRT, abort_handler);
+    signal(SIGFPE, abort_handler);
+    signal(SIGILL, abort_handler);
+    signal(SIGINT, abort_handler);
+    signal(SIGSEGV, abort_handler);
+    signal(SIGTERM, abort_handler);
+
     Parser p = {0};
 
     Expr *env = env_default(make_nil());
@@ -60,6 +86,5 @@ int main(int argc, char **argv)
         }
     }
 
-    fflush(stdout);
     return 0;
 }
