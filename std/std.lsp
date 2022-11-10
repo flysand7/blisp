@@ -94,9 +94,10 @@
 
 (macro (cond . clauses)
   (if (pair? clauses)
-      `(if ,(caar clauses)
-           ,(cadr (car clauses))
-           (cond ,@(cdr clauses)))))
+      `(if ,(car (car clauses))
+           ,(car (cdr (car clauses)))
+           (cond ,@(cdr clauses)))
+        (error "clauses isnt a pair")))
 
 (def else 1)
 
