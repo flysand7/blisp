@@ -504,7 +504,7 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
             *stack = make_frame(*stack, *env, op, make_nil());
             op->macro = true;
             frame_ev_op(*stack) = op;
-            frame_ev_arg(*stack);
+            frame_ev_arg(*stack) = args;
             return eval_do_bind(stack, env);
         }
     }
@@ -551,7 +551,7 @@ static Expr *eval(Expr *env, Expr *expr)
     Expr *result;
     int gc_counter = 0;
     do {
-        if(++gc_counter == 1000000) {
+        if(++gc_counter == 1000) {
             gc_mark(expr);
             gc_mark(env);
             gc_mark(stack);

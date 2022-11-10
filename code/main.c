@@ -50,8 +50,8 @@ int main(int argc, char **argv)
     Parser p = {0};
 
     Expr *env = env_default(make_nil());
-    if(!run_file(env, "lisp/std.lsp")) {
-        printf("[warning]: lisp/std.lsp wasn't loaded.");
+    if(!run_file(env, "std/std.lsp")) {
+        printf("[warning]: std/std.lsp wasn't loaded.");
     }
 
     bool repl_mode = true;
