@@ -90,9 +90,11 @@
       (sum-iter f next (+ cur-sum (f a)) (next a) b)))
   (sum-iter f next 0 a b))
 
-(def (pi-term x)
-  (/ 1.0 (* x (+ x 2))))
 (def (pi-sum a b)
+  (def (pi-term x)
+    (/ 1.0 (* x (+ x 2))))
   (def (pi-next x)
     (+ x 4))
   (sum pi-term pi-next a b))
+
+(print (pi-sum 1 1000))

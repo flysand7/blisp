@@ -85,6 +85,7 @@ void gc_mark(Expr *expr)
 }
 
 void gc_sweep() {
+    trace_start();
     Alloc *prev = nil;
     Alloc *alloc = mem_pool.alloc_head;
     while(alloc != nil) {
@@ -99,4 +100,5 @@ void gc_sweep() {
     for(Alloc *alloc = mem_pool.alloc_head; alloc != nil; alloc=alloc->next) {
         alloc->mark = false;
     }
+    trace_end();
 }

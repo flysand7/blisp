@@ -502,7 +502,8 @@ static Expr *eval(Expr *env, Expr *expr)
     Expr *result;
     int gc_counter = 0;
     do {
-        if(++gc_counter == 1000) {
+        trace_start();
+        if(++gc_counter == 1000000) {
             gc_mark(expr);
             gc_mark(env);
             gc_mark(stack);
@@ -551,6 +552,7 @@ static Expr *eval(Expr *env, Expr *expr)
                         frame_ev_op(stack) = op;
                         frame_ev_arg(stack) = name;
                         expr = car(exprs);
+                        trace_end();
                         continue;
                     }
                     else if(is_pair(pat)) {
@@ -594,6 +596,7 @@ static Expr *eval(Expr *env, Expr *expr)
                             exit(1);
                         }
                     }
+                    trace_end();
                     continue;
                 }
                 else if(sym_is(op, "\\")) {
@@ -637,13 +640,16 @@ static Expr *eval(Expr *env, Expr *expr)
 push:
                 stack = make_frame(stack, env, op, args);
                 expr = op;
+                trace_end();
                 continue;
             }
         }
         if(is_nil(stack)) {
+            trace_end();
             break;
         }
         expr = eval_do_return(&stack, &env, &result);
+        trace_end();
     } while(true);
     return result;
 }

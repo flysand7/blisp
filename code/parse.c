@@ -1,5 +1,5 @@
 
-typedef enum TokenType {
+typedef enum TkType {
     TOKEN_EOF,
     TOKEN_LPAREN,
     TOKEN_RPAREN,
@@ -13,11 +13,11 @@ typedef enum TokenType {
     TOKEN_UNQUOTE_SPLICING,
     TOKEN_COMMA,
     TOKEN_DOT,
-} TokenType;
+} TkType;
 
 struct Token typedef Token;
 struct Token {
-    TokenType type;
+    TkType type;
     char *str;
     i64 i;
     f64 flt;
@@ -271,7 +271,7 @@ void parse_next_token(Parser *p)
 #define token_is_sym(p)    (token_type(p) == TOKEN_SYMBOL)
 #define token_is_eof(p)    (token_type(p) == TOKEN_EOF)
 
-bool token_match(Parser *p, TokenType t)
+bool token_match(Parser *p, TkType t)
 {
     if(token_type(p) == t) {
         parse_next_token(p);

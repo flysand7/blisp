@@ -13,7 +13,39 @@
 
 #include "blisp.h"
 
-// #include "builtin/include.c"
+// --------
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#define NOMINMAX
+#include <Windows.h>
+#define SPALL_IMPLEMENTATION
+#include "spall.h"
+
+static SpallProfile spall_ctx;
+static SpallBuffer  spall_buffer;
+
+double utime() {
+    static double invfreq;
+    if (!invfreq) {
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+        invfreq = 1000000.0 / frequency.QuadPart;
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return counter.QuadPart * invfreq;
+}
+#define trace_start() SpallTraceBeginLenTidPid( \
+    &spall_ctx,                                 \
+    &spall_buffer,                              \
+    __FUNCTION__,                               \
+    sizeof(__FUNCTION__) - 1,                   \
+    0,                                          \
+    0,                                          \
+    utime()                                     \
+    )
+#define trace_end() SpallTraceEndTidPid(&spall_ctx, &spall_buffer, 0, 0, utime())
+// -----------
 
 #include "memory.c"
 #include "wrap.c"
@@ -42,6 +74,15 @@ static void abort_handler(int signal)
 
 int main(int argc, char **argv)
 {
+    spall_ctx = SpallInit("trace.spall", 1);    
+    unsigned char *buffer = malloc(1*1024*1024);
+    spall_buffer = (SpallBuffer){
+        .length = 1*1024*1024,
+        .data = buffer,
+    };
+
+    SpallBufferInit(&spall_ctx, &spall_buffer);
+
     signal(SIGABRT, abort_handler);
     signal(SIGFPE, abort_handler);
     signal(SIGILL, abort_handler);
@@ -87,6 +128,7 @@ int main(int argc, char **argv)
             }
         }
     }
-
+    SpallBufferQuit(&spall_ctx, &spall_buffer);
+    SpallQuit(&spall_ctx);
     return 0;
 }
