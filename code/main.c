@@ -15,6 +15,7 @@
 
 // #include "builtin/include.c"
 
+#include "memory.c"
 #include "wrap.c"
 #include "parse.c"
 #include "blisp.c"
@@ -33,6 +34,7 @@ static char const *signal_name(int signal) {
 
 static void abort_handler(int signal)
 {
+    __builtin_trap();
     printf("[%s]: Program has been terminated\n", signal_name(signal));
     exit(1);
 }

@@ -1,6 +1,4 @@
 
-Expr *gc_stack;
-Alloc *global_allocs = nil;
 
 static void fatal_error(char *msg, ...)
 {
@@ -20,14 +18,7 @@ static void expr_to_atom(Expr *expr)
 
 static Expr *new_expr(ExprKind kind, bool atomic)
 {
-    Alloc *alloc = calloc(1, sizeof(Alloc));
-    if(alloc == nil) {
-        printf("FATAL: can't allocate memory\n");
-        exit(1);
-    }
-    alloc->mark = 0;
-    alloc->next = global_allocs;
-    global_allocs = alloc;
+    Alloc *alloc = mem_pool_alloc(&mem_pool);
     Expr *expr = &alloc->expr;
     kind(expr) = kind;
     atom(expr) = atomic;
@@ -35,46 +26,6 @@ static Expr *new_expr(ExprKind kind, bool atomic)
 }
 
 // Garbage collection
-
-void gc_stack_push(Expr *expr)
-{
-    gc_stack = cons(expr, gc_stack);
-}
-
-void gc_stack_pop()
-{
-    gc_stack = cdr(gc_stack);
-}
-
-void gc_mark(Expr *expr)
-{
-    Alloc *alloc = (Alloc *)expr;
-    if(alloc->mark) return;
-    alloc->mark = true;
-    if(is_pair(expr)) {
-        gc_mark(car(expr));
-        gc_mark(cdr(expr));
-    }
-}
-
-void gc_sweep() {
-    Alloc **link = &global_allocs;
-
-    while(*link != nil) {
-        Alloc *alloc = *link;
-        if(!alloc->mark) {
-            *link = alloc->next;
-            free(alloc);
-        }
-        else {
-            link = &alloc->next;
-        }
-    }
-
-    for(Alloc *alloc = global_allocs; alloc != nil; alloc=alloc->next) {
-        alloc->mark = false;
-    }
-}
 
 // Nil
 
