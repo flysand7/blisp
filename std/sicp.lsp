@@ -61,4 +61,40 @@
           (int-sub i 1)))))
   (fib-iter 1 0 0 1 n))
 
-(print (map fib '(120)))
+(def (gcd a b)
+  (if (= b 0)
+    a
+    (gcd b (% a b))))
+
+(def (prime? n)
+  (def (divides? a b) (eq? (% b a) 0))
+  (def (find-divisor n test-divisor)
+    (cond
+      ((> (square test-divisor) n)
+        n)
+      ((divides? test-divisor n)
+        test-divisor)
+      (else
+        (find-divisor n (+ test-divisor 1)))))
+  (def (smallest-divisor n)
+    (find-divisor n 2))
+  (= n (smallest-divisor n)))
+
+(def (dec n) (- n 1))
+(def (inc n) (+ n 1))
+
+(def (sum f next a b)
+  (def (sum-iter f next cur-sum a b)
+    (if (> a b)
+      cur-sum
+      (sum-iter f next (+ cur-sum (f a)) (next a) b)))
+  (sum-iter f next 0 a b))
+
+(def (pi-sum a b)
+  (def (pi-term x)
+    (/ 1.0 (* x (+ x 2))))
+  (def (pi-next x)
+    (+ x 4))
+  (sum pi-term pi-next a b))
+
+(print (* 8 (pi-sum 1 200)))

@@ -125,39 +125,70 @@
   (if (int? x) (flt-from-int x)
                (error "Can't convert type" (type-name x) "to float"))))
 
+(def (homo-bin-op int-f flt-f x y)
+  (cond
+      ((int? x) (cond ((int? y) (int-f x y))
+                      ((flt? y) (flt-f (flt-from-int x) y))
+                      (else     'type_error)))
+      ((flt? x) (cond ((int? y) (flt-f x (flt-from-int y)))
+                      ((flt? y) (flt-f x y))
+                      (else     'type_error)))
+      (else
+        'type_error)))
+
+(def (homo-bin-add x y)
+  (homo-bin-op int-add flt-add x y))
+(def (homo-bin-sub x y)
+  (homo-bin-op int-sub flt-sub x y))
+(def (homo-bin-mul x y)
+  (homo-bin-op int-mul flt-mul x y))
+(def (homo-bin-div x y)
+  (homo-bin-op int-div flt-div x y))
+
 (def (+ . list)
-  (foldl (\ (a b) (flt-add (to-flt a) (to-flt b))) 0.0 list))
+  (foldl (\ (a b) (homo-bin-add a b)) 0 list))
 
 (def (* . list)
-  (foldl (\ (a b) (flt-mul (to-flt a) (to-flt b))) 1.0 list))
+  (foldl (\ (a b) (homo-bin-mul a b)) 1.0 list))
 
 (def (/ a b)
-  (if (eq? b 0) (error "Division by zero")
-  (flt-div (to-flt a) (to-flt b))))
+  (if (eq? b 0)
+    (error "Division by zero")
+    (flt-div (to-flt a) (to-flt b))))
+
+(def (// a b)
+  (if (eq? b 0)
+    (error "Division by zero")
+    (int-div a b)))
+
+(def (% a b)
+  (if (eq? b 0)
+    a
+    (int-rem a b)))
 
 (def (- . list)
   (if (eq? (cdr list) nil)
     (flt-neg (to-flt (car list)))
     (if (eq? (cdr (cdr list)) nil)
-      (flt-sub (to-flt (car list)) (to-flt (car (cdr list))))
+      (homo-bin-sub (car list) (car (cdr list)))
       (error "Subtraction can't take more than 2 args"))))
 
 ; Comparison
 
 (def (< a b)
-  (flt-les? (to-flt a) (to-flt b)))
+  (homo-bin-op int-les? flt-les? a b))
 
 (def (> a b)
-  (flt-grt? (to-flt a) (to-flt b)))
+  (homo-bin-op int-grt? flt-grt? a b))
 
 (def (= a b)
-  (flt-eq? (to-flt a) (to-flt b)))
+  (homo-bin-op int-eq? flt-eq? a b))
 
 (def (!= a b)
-  (flt-neq? (to-flt a) (to-flt b)))
+  (homo-bin-op int-neq? flt-neq? a b))
 
 (def (<= a b)
-  (flt-leq? (to-flt a) (to-flt b)))
+  (homo-bin-op int-leq? flt-leq? a b))
 
 (def (>= a b)
-  (flt-geq? (to-flt a) (to-flt b)))
+  (homo-bin-op int-geq? flt-geq? a b))
