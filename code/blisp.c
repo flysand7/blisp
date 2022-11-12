@@ -159,7 +159,6 @@ static i64 listn(Expr *list)
 
 static Expr *list_ith(Expr *list, i64 i)
 {
-    assert(0 <= i && i < listn(list));
     for(i64 k = 0; k != i; ++k) {
         list = cdr(list);
     }
@@ -175,8 +174,12 @@ static void list_set(Expr *list, i64 i, Expr *value) {
 
 static bool is_list(Expr *expr)
 {
-    if(is_nil(expr))  return true;
-    if(is_pair(expr)) return is_list(cdr(expr));
+    while(is_pair(expr)) {
+        expr = cdr(expr);
+    }
+    if(is_nil(expr)) {
+        return true;
+    }
     return false;
 }
 
@@ -193,8 +196,8 @@ static Expr *make_func(Func *f)
 
 static bool is_closure(Expr *expr)
 {
-    if(is_list(expr) && !is_nil(expr)) {
-        Expr *flag = list_ith(expr, 0);
+    if(is_pair(expr)) {
+        Expr *flag = car(expr);
         if(is_sym(flag) && sym_is(flag, "closure")) {
             return true;
         }
@@ -204,8 +207,8 @@ static bool is_closure(Expr *expr)
 
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
 {
-    assert(is_list(body));
-    Expr *closure = list(4, make_sym("closure"), env, pars, body);
+    assert(is_pair(body));
+    Expr *closure = cons(make_sym("closure"), cons(env, cons(pars, cons(body, make_nil()))));
     expr_to_atom(closure);
     return closure;
 }
@@ -304,16 +307,17 @@ static Expr *env_default(Expr *parent)
 static Expr *env_lookup(Expr *env, Expr *symbol)
 {
     assert(is_sym(symbol));
-    Expr *bindings = env_bindings(env);
-    foreach(bind, bindings) {
-        if(sym_eq(symbol, bind_sym(bind))) {
-            return bind_val(bind);
-        }
-    };
-    if(is_nil(env_parent(env))) {
-        return nil;
+    while(!is_nil(env)) {
+        Expr *bindings = env_bindings(env);
+        foreach(bind, bindings) {
+            if(sym_eq(symbol, bind_sym(bind))) {
+                trace_end();
+                return bind_val(bind);
+            }
+        };
+        env = env_parent(env);
     }
-    return env_lookup(env_parent(env), symbol);
+    return nil;
 }
 
 static void env_bind(Expr *env, Expr *symbol, Expr *value)
@@ -336,6 +340,7 @@ static void env_bind(Expr *env, Expr *symbol, Expr *value)
 
 static void bind_pars(Expr *env, Expr *pars, Expr *args)
 {
+bind:
     if(is_nil(pars)) {
         if(!is_nil(args)) {
             fatal_error("Too much arguments to call a function.");
@@ -344,6 +349,7 @@ static void bind_pars(Expr *env, Expr *pars, Expr *args)
     }
     if(is_sym(pars)) {
         env_bind(env, pars, args);
+        trace_end();
         return;
     }
     if(is_pair(pars)) {
@@ -351,26 +357,31 @@ static void bind_pars(Expr *env, Expr *pars, Expr *args)
             fatal_error("Not enough arguments to call a function.");
         }
         bind_pars(env, car(pars), car(args));
-        bind_pars(env, cdr(pars), cdr(args));
+        pars = cdr(pars);
+        args = cdr(args);
+        goto bind;
     }
 }
 
 static Expr *make_frame(Expr *parent, Expr *env, Expr *op, Expr *args)
 {
-    return list(7,
-        parent,
-        env,
-        op,
-        args,
-        make_nil(),
-        make_nil(),
-        make_nil(),
-        make_nil()
-    );
+    trace_startf();
+    Expr *frame =
+        cons(parent,
+        cons(env,
+        cons(op,
+        cons(args,
+        cons(make_nil(),
+        cons(make_nil(),
+        cons(make_nil(),
+        cons(make_nil(), make_nil()))))))));
+    trace_end();
+    return frame;
 }
 
 static Expr *eval_do_exec(Expr **stack, Expr **env)
 {
+    trace_startf();
     Expr *body;
     *env = frame_env(*stack);
     body = frame_body(*stack);
@@ -382,11 +393,13 @@ static Expr *eval_do_exec(Expr **stack, Expr **env)
     else {
         frame_body(*stack) = body;
     }
+    trace_end();
     return expr;
 }
 
 static Expr *eval_do_bind(Expr **stack, Expr **env)
 {
+    trace_startf();
     Expr *body = frame_body(*stack);
     if(!is_nil(body)) {
         return eval_do_exec(stack, env);
@@ -400,11 +413,14 @@ static Expr *eval_do_bind(Expr **stack, Expr **env)
     frame_body(*stack) = body;
     bind_pars(*env, pars, args);
     frame_ev_arg(*stack) = make_nil();
-    return eval_do_exec(stack, env);
+    Expr *ret = eval_do_exec(stack, env);
+    trace_end();
+    return ret;
 }
 
 static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
 {
+    trace_startf();
     Expr *op = frame_ev_op(*stack);
     Expr *args = frame_ev_arg(*stack);
     if(!is_nil(args)) {
@@ -427,25 +443,32 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
     }
     if(is_func(op)) {
         *stack = frame_parent(*stack);
+        trace_end();
         return cons(op, args);
     }
     else if(is_closure(op)) {
-        return eval_do_bind(stack, env);
+        Expr *ret = eval_do_bind(stack, env);
+        trace_end();
+        return ret;
     }
     else {
         // TODO: I should implement custom format specifiers for this
         // to work properly
         fatal_error("Trying to apply a non-callable object");
+        trace_end();
         return make_nil();
     }
 }
 
 static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
+    trace_startf();
     *env = frame_env(*stack);
     Expr *op = frame_ev_op(*stack);
     Expr *body = frame_body(*stack);
     if(!is_nil(body)) {
-        return eval_do_apply(stack, env, result);
+        Expr *ret = eval_do_apply(stack, env, result);
+        trace_end();
+        return ret;
     }
     if(is_nil(op)) {
         op = *result;
@@ -456,7 +479,9 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
             op->macro = true;
             frame_ev_op(*stack) = op;
             frame_ev_arg(*stack) = args;
-            return eval_do_bind(stack, env);
+            Expr *ret = eval_do_bind(stack, env);
+            trace_end();
+            return ret;
         }
     }
     else if(is_sym(op)) {
@@ -464,6 +489,7 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
             Expr *pattern = frame_ev_arg(*stack);
             env_bind(*env, pattern, *result);
             *stack = car(*stack);
+            trace_end();
             return cons(make_sym("quote"), cons(pattern, make_nil()));
         }
         else if(sym_is(op, "if")) {
@@ -472,6 +498,7 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
             if(!is_int(*result)) {
                 fatal_error("The if condition must be a bool.");
             }
+            trace_end();
             return val_bool(*result)? car(args) : car(cdr(args));
         }
         else {
@@ -480,6 +507,7 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
     }
     else if(is_macro(op)) {
         *stack = car(*stack);
+        trace_end();
         return *result;
     }
     else {
@@ -489,9 +517,12 @@ store_arg:;
     }
     Expr *args = frame_arg(*stack);
     if(is_nil(args)) {
-        return eval_do_apply(stack, env, result);
+        Expr *ret = eval_do_apply(stack, env, result);
+        trace_end();
+        return ret;
     }
     frame_arg(*stack) = cdr(args);
+    trace_end();
     return car(args);
 }
 
@@ -502,7 +533,7 @@ static Expr *eval(Expr *env, Expr *expr)
     Expr *result;
     int gc_counter = 0;
     do {
-        trace_start();
+        trace_startf();
         if(++gc_counter == 1000000) {
             gc_mark(expr);
             gc_mark(env);
@@ -606,7 +637,6 @@ static Expr *eval(Expr *env, Expr *expr)
                     result = make_closure(env, params, body);
                 }
                 else if(sym_is(op, "include")) {
-                    Expr *result;
                     assert(!is_nil(args));
                     foreach(arg, args) {
                         Expr *arg = car(args);
@@ -621,12 +651,12 @@ static Expr *eval(Expr *env, Expr *expr)
                         }
                         file_stack = cdr(file_stack);
                     }
-                    return result;
                 }
                 else if(sym_is(op, "apply")) {
                     stack = make_frame(stack, env, op, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
+                    trace_end();
                     continue;
                 }
                 else {

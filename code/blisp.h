@@ -119,16 +119,16 @@ static Expr *make_func(Func *f);
 // Closure
 static bool  is_closure(Expr *expr);
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body);
-#define      closure_env(closure)    list_ith(closure, 1)
-#define      closure_params(closure) list_ith(closure, 2)
-#define      closure_body(closure)   list_ith(closure, 3)
+#define      closure_env(closure)    car(cdr(closure))
+#define      closure_params(closure) car(cdr(cdr(closure)))
+#define      closure_body(closure)   car(cdr(cdr(cdr(closure))))
 
 // Macro
 static bool  is_macro(Expr *expr);
 static Expr *make_macro(Expr *env, Expr *pars, Expr *body);
-#define      macro_env(macro)        list_ith(macro, 1)
-#define      macro_params(macro)     list_ith(macro, 2)
-#define      macro_body(macro)       list_ith(macro, 3)
+#define      macro_env(macro)        car(cdr(closure))
+#define      macro_params(macro)     car(cdr(cdr(closure)))
+#define      macro_body(macro)       car(cdr(cdr(cdr(closure))))
 
 // Environment
 static Expr *env_create(Expr *parent);

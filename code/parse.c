@@ -391,6 +391,7 @@ char *read_file(char *filename)
 
 static Expr *run_file(Expr *env, char *filename)
 {
+    trace_start(filename, strlen(filename));
     Parser p;
     char *text = read_file(filename);
     if(text == nil) {
@@ -402,5 +403,6 @@ static Expr *run_file(Expr *env, char *filename)
         Expr *code = parse_expr(&p);
         result = eval(env, code);
     }
+    trace_end();
     return result;
 }
