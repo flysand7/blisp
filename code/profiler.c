@@ -20,7 +20,7 @@ double utime() {
     QueryPerformanceCounter(&counter);
     return counter.QuadPart * invfreq;
 }
-#if defined(DO_TRACE)
+#if defined(TRACING)
     #define trace_start(s,n) SpallTraceBeginLenTidPid( \
         &spall_ctx,                                 \
         &spall_buffer,                              \

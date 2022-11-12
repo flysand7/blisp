@@ -2,6 +2,8 @@
 #if !defined(BLISP_H)
 #define BLISP_H
 
+uint8_t  typedef u8;
+int8_t   typedef i8;
 uint64_t typedef u64;
 int64_t  typedef i64;
 float    typedef f32;
@@ -14,6 +16,7 @@ double   typedef f64;
 struct Alloc typedef Alloc;
 struct Expr typedef Expr;
 struct Pair typedef Pair;
+struct Intern typedef Intern;
 
 typedef enum ExprKind {
     EXPR_NIL,
@@ -33,7 +36,7 @@ struct Expr {
     bool     macro;
     union {
         struct{ Expr *car, *cdr; };
-        char *str;
+        Intern *str;
         i64   i;
         f64   f;
         Func *bin;
@@ -87,7 +90,7 @@ static Expr *make_str(char *str);
 static Expr *make_sym(char *name);
 #define      val_sym(e) ((e)->str)
 static bool  sym_eq(Expr *sym1, Expr *sym2);
-static bool  sym_is(Expr *sym, char *name);
+static bool  sym_is(Expr *sym, Intern *name);
 #define      is_sym(e) (kind(e) == EXPR_SYM)
 
 // Pairs
@@ -154,7 +157,7 @@ static Expr *make_frame(Expr *parent, Expr *env, Expr *op, Expr *args);
 static Expr *eval(Expr *env, Expr *expr);
 
 // Expression printing
-static Expr *expr_print(Expr *expr);
-static Expr *expr_println(Expr *expr);
+static Expr *expr_print(FILE *file, Expr *expr);
+static Expr *expr_println(FILE *file, Expr *expr);
 
 #endif

@@ -14,6 +14,7 @@
 #include "blisp.h"
 #include "profiler.c"
 
+#include "intern.c"
 #include "memory.c"
 #include "wrap.c"
 #include "parse.c"
@@ -59,6 +60,9 @@ int main(int argc, char **argv)
 
     Parser p = {0};
 
+    mem_init();
+    interns_init();
+
     Expr *env = env_default(make_nil());
     if(!run_file(env, "std/std.lsp")) {
         printf("[warning]: std/std.lsp wasn't loaded.");
@@ -83,7 +87,7 @@ int main(int argc, char **argv)
             Expr *code = parse_root_expr(&p);
             if(code != nil) {
                 Expr *result = eval(env, code);
-                expr_print(result);
+                expr_print(stdout, result);
             }
         }
     }
