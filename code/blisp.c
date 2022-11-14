@@ -81,6 +81,12 @@ static Expr *make_sym(char *name)
     return expr;
 }
 
+static Expr *make_sym_intern(Intern *str) {
+    Expr *expr = new_expr(EXPR_SYM, false);
+    val_sym(expr) = str;
+    return expr;
+}
+
 static bool sym_eq(Expr *sym1, Expr *sym2)
 {
     assert(is_sym(sym1) && is_sym(sym2));
@@ -207,8 +213,7 @@ static bool is_closure(Expr *expr)
 static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
 {
     assert(is_pair(body));
-    // TODO: can use interned version of the symbol
-    Expr *closure = cons(make_sym("closure"), cons(env, cons(pars, cons(body, make_nil()))));
+    Expr *closure = cons(make_sym_intern(intern_closure), cons(env, cons(pars, cons(body, make_nil()))));
     expr_to_atom(closure);
     return closure;
 }
@@ -334,7 +339,7 @@ static void env_bind(Expr *env, Expr *symbol, Expr *value)
     };
     if(!found) {
         Expr *bind = cons(symbol, value);
-        list_pushb(env, bind);
+        env_bindings(env) = cons(bind, env_bindings(env));
     }
 }
 

@@ -88,6 +88,7 @@ static Expr *make_str(char *str);
 
 // Symbols
 static Expr *make_sym(char *name);
+static Expr *make_sym_intern(Intern *str);
 #define      val_sym(e) ((e)->str)
 static bool  sym_eq(Expr *sym1, Expr *sym2);
 static bool  sym_is(Expr *sym, Intern *name);
