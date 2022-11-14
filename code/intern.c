@@ -26,13 +26,14 @@ Intern *intern_include;
 
 static Intern *intern_get(InternBuffer *buffer, char *cstr) {
     trace_startf();
+    i64 str_len = strlen(cstr);
     // Search the intern buffer for the string that interests us
     for(i64 i = 0; i != buffer->ninterns; ++i) {
         Intern *intern = &buffer->interns[i];
         bool found = true;
-        // if(intern->len != str_len) {
-        //     found = false;
-        // }
+        if(intern->len != str_len) {
+            found = false;
+        }
         if(strcmp(intern->data, cstr) == 0) {
             trace_end();
             return intern;
@@ -50,7 +51,7 @@ static Intern *intern_get(InternBuffer *buffer, char *cstr) {
         assert(false);
     }
     Intern *intern = &buffer->interns[buffer->ninterns++];
-    // intern->len = str_len;
+    intern->len = str_len;
     intern->data = cstr;
     trace_end();
     return intern;
