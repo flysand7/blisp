@@ -58,6 +58,7 @@ int main(int argc, char **argv)
     signal(SIGSEGV, abort_handler);
     signal(SIGTERM, abort_handler);
 
+    log_file = fopen("blisp.log", "wb");
     Parser p = {0};
 
     mem_init();

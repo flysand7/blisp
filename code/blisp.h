@@ -13,6 +13,8 @@ double   typedef f64;
 #define repeat   do
 #define nil      NULL
 
+FILE *log_file = nil;
+
 struct Alloc typedef Alloc;
 struct Expr typedef Expr;
 struct Pair typedef Pair;

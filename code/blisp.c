@@ -1,4 +1,13 @@
 
+struct BinFuncDesc typedef BinFuncDesc;
+struct BinFuncDesc {
+    Func *func;
+    Intern *name;
+};
+
+static BinFuncDesc *bin_func_list = nil;
+static i64 bin_func_count = 0;
+
 static void fatal_error(char *msg, ...)
 {
     va_list args;
@@ -240,72 +249,92 @@ static Expr *env_create(Expr *parent)
     return cons(parent, make_nil());
 }
 
+static void add_bin_func(Expr *env, char *name, Func *func) {
+    bin_func_list = realloc(bin_func_list, (bin_func_count+1)*sizeof(BinFuncDesc));
+    Intern *iname = intern_get(&intern_buf, name);
+    bin_func_list[bin_func_count++] = (BinFuncDesc) {
+        .name = iname,
+        .func = func,
+    };
+    env_bind(env, make_sym_intern(iname), make_func(func));
+}
+
+static Intern *bin_func_name(Func *func) {
+    for(i64 i = 0; i != bin_func_count; ++i) {
+        BinFuncDesc desc = bin_func_list[i];
+        if(desc.func == func) {
+            return desc.name;
+        }
+    }
+    return nil;
+}
+
 static Expr *env_default(Expr *parent)
 {
     Expr *env = env_create(parent);
 
-    env_bind(env, make_sym("nil"),         make_nil());
-    env_bind(env, make_sym("inf"),         make_flt(INFINITY));
-    env_bind(env, make_sym("nan"),         make_flt(NAN));
+    env_bind(env, make_sym("nil"),    make_nil());
+    env_bind(env, make_sym("inf"),    make_flt(INFINITY));
+    env_bind(env, make_sym("nan"),    make_flt(NAN));
 
-    env_bind(env, make_sym("int?"),        make_func(f_is_int));
-    env_bind(env, make_sym("flt?"),        make_func(f_is_flt));
-    env_bind(env, make_sym("nil?"),        make_func(f_is_nil));
-    env_bind(env, make_sym("sym?"),        make_func(f_is_sym));
-    env_bind(env, make_sym("pair?"),       make_func(f_is_pair));
-    env_bind(env, make_sym("list?"),       make_func(f_is_list));
-    env_bind(env, make_sym("func?"),       make_func(f_is_func));
+    add_bin_func(env, "int?",         f_is_int);
+    add_bin_func(env, "flt?",         f_is_flt);
+    add_bin_func(env, "nil?",         f_is_nil);
+    add_bin_func(env, "sym?",         f_is_sym);
+    add_bin_func(env, "pair?",        f_is_pair);
+    add_bin_func(env, "list?",        f_is_list);
+    add_bin_func(env, "func?",        f_is_func);
 
     // Integers
-    env_bind(env, make_sym("int-bnot"),    make_func(f_int_bnot));
-    env_bind(env, make_sym("int-neg"),     make_func(f_int_neg));
-    env_bind(env, make_sym("int-add"),     make_func(f_int_add));
-    env_bind(env, make_sym("int-sub"),     make_func(f_int_sub));
-    env_bind(env, make_sym("int-mul"),     make_func(f_int_mul));
-    env_bind(env, make_sym("int-div"),     make_func(f_int_div));
-    env_bind(env, make_sym("int-rem"),     make_func(f_int_rem));
-    env_bind(env, make_sym("int-les?"),    make_func(f_int_les));
-    env_bind(env, make_sym("int-grt?"),    make_func(f_int_grt));
-    env_bind(env, make_sym("int-eq?"),     make_func(f_int_eq));
-    env_bind(env, make_sym("int-neq?"),    make_func(f_int_neq));
-    env_bind(env, make_sym("int-leq?"),    make_func(f_int_leq));
-    env_bind(env, make_sym("int-geq?"),    make_func(f_int_geq));
-    env_bind(env, make_sym("int-band"),    make_func(f_int_band));
-    env_bind(env, make_sym("int-bor"),     make_func(f_int_bor));
-    env_bind(env, make_sym("int-bxor"),    make_func(f_int_bxor));
+    add_bin_func(env, "int-bnot",     f_int_bnot);
+    add_bin_func(env, "int-neg",      f_int_neg);
+    add_bin_func(env, "int-add",      f_int_add);
+    add_bin_func(env, "int-sub",      f_int_sub);
+    add_bin_func(env, "int-mul",      f_int_mul);
+    add_bin_func(env, "int-div",      f_int_div);
+    add_bin_func(env, "int-rem",      f_int_rem);
+    add_bin_func(env, "int-les?",     f_int_les);
+    add_bin_func(env, "int-grt?",     f_int_grt);
+    add_bin_func(env, "int-eq?",      f_int_eq);
+    add_bin_func(env, "int-neq?",     f_int_neq);
+    add_bin_func(env, "int-leq?",     f_int_leq);
+    add_bin_func(env, "int-geq?",     f_int_geq);
+    add_bin_func(env, "int-band",     f_int_band);
+    add_bin_func(env, "int-bor",      f_int_bor);
+    add_bin_func(env, "int-bxor",     f_int_bxor);
 
     // Floats
-    env_bind(env, make_sym("flt-from-int"),make_func(f_flt_from_int));
-    env_bind(env, make_sym("flt-floor"),   make_func(f_flt_floor));
-    env_bind(env, make_sym("flt-ceil"),    make_func(f_flt_ceil));
-    env_bind(env, make_sym("flt-round"),   make_func(f_flt_round));
-    env_bind(env, make_sym("flt-trunc"),   make_func(f_flt_trunc));
-    env_bind(env, make_sym("flt-neg"),     make_func(f_flt_neg));
-    env_bind(env, make_sym("flt-inf?"),    make_func(f_flt_is_inf));
-    env_bind(env, make_sym("flt-nan?"),    make_func(f_flt_is_nan));
-    env_bind(env, make_sym("flt-normal?"), make_func(f_flt_is_normal));
-    env_bind(env, make_sym("flt-add"),     make_func(f_flt_add));
-    env_bind(env, make_sym("flt-sub"),     make_func(f_flt_sub));
-    env_bind(env, make_sym("flt-mul"),     make_func(f_flt_mul));
-    env_bind(env, make_sym("flt-div"),     make_func(f_flt_div));
-    env_bind(env, make_sym("flt-les?"),    make_func(f_flt_les));
-    env_bind(env, make_sym("flt-grt?"),    make_func(f_flt_grt));
-    env_bind(env, make_sym("flt-eq?"),     make_func(f_flt_eq));
-    env_bind(env, make_sym("flt-neq?"),    make_func(f_flt_neq));
-    env_bind(env, make_sym("flt-leq?"),    make_func(f_flt_leq));
-    env_bind(env, make_sym("flt-geq?"),    make_func(f_flt_geq));
+    add_bin_func(env, "flt-from-int", f_flt_from_int);
+    add_bin_func(env, "flt-floor",    f_flt_floor);
+    add_bin_func(env, "flt-ceil",     f_flt_ceil);
+    add_bin_func(env, "flt-round",    f_flt_round);
+    add_bin_func(env, "flt-trunc",    f_flt_trunc);
+    add_bin_func(env, "flt-neg",      f_flt_neg);
+    add_bin_func(env, "flt-inf?",     f_flt_is_inf);
+    add_bin_func(env, "flt-nan?",     f_flt_is_nan);
+    add_bin_func(env, "flt-normal?",  f_flt_is_normal);
+    add_bin_func(env, "flt-add",      f_flt_add);
+    add_bin_func(env, "flt-sub",      f_flt_sub);
+    add_bin_func(env, "flt-mul",      f_flt_mul);
+    add_bin_func(env, "flt-div",      f_flt_div);
+    add_bin_func(env, "flt-les?",     f_flt_les);
+    add_bin_func(env, "flt-grt?",     f_flt_grt);
+    add_bin_func(env, "flt-eq?",      f_flt_eq);
+    add_bin_func(env, "flt-neq?",     f_flt_neq);
+    add_bin_func(env, "flt-leq?",     f_flt_leq);
+    add_bin_func(env, "flt-geq?",     f_flt_geq);
 
     // Symbols
-    env_bind(env, make_sym("sym-eq?"),     make_func(f_is_sym_eq));
+    add_bin_func(env, "sym-eq?",      f_is_sym_eq);
 
     // Pairs
-    env_bind(env, make_sym("car"),         make_func(f_car));
-    env_bind(env, make_sym("cdr"),         make_func(f_cdr));
-    env_bind(env, make_sym("cons"),        make_func(f_cons));
+    add_bin_func(env, "car",          f_car);
+    add_bin_func(env, "cdr",          f_cdr);
+    add_bin_func(env, "cons",         f_cons);
 
-    env_bind(env, make_sym("print-ch"),     make_func(f_print_char));
-    env_bind(env, make_sym("input-ch"),     make_func(f_input_char));
-    env_bind(env, make_sym("print"),       make_func(f_print));
+    add_bin_func(env, "print-ch",     f_print_char);
+    add_bin_func(env, "input-ch",     f_input_char);
+    add_bin_func(env, "print",        f_print);
     return env;
 }
 
@@ -431,6 +460,19 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
     if(!is_nil(args)) {
         list_reverse(&args);
         frame_ev_arg(*stack) = args;
+        if(log_file != nil) {
+            static int i = 0;
+            if(i < 10000000) {
+                Expr *ev_args = frame_ev_arg(*stack);
+                Expr *ev_op = frame_ev_op(*stack);
+                fprintf(log_file, "UNCACHED: ");
+                expr_print(log_file, ev_op);
+                fprintf(log_file, ", ARGS: ");
+                expr_print(log_file, ev_args);
+                fprintf(log_file, "\n");
+            }
+            ++i;
+        }
     }
     if(is_sym(op)) {
         // instead of (apply, op, (args)) we execute (op, args)
@@ -696,15 +738,16 @@ static Expr *expr_print(FILE *out, Expr *expr)
     // Special data
     if(is_macro(expr)) {
         fprintf(out, "<macro");
-        // expr_print(out, closure_params(expr));
+        fputc(' ', out);
+        expr_print(out, closure_params(expr));
         // fputc(' ', out);
         // expr_print(out, closure_body(expr));
         fprintf(out, ">");
     }
     else if(is_closure(expr)) {
         fprintf(out, "<closure");
-        // expr_print(out, closure_params(expr));
-        // fputc(' ', out);
+        fputc(' ', out);
+        expr_print(out, closure_params(expr));
         // expr_print(out, closure_body(expr));
         fprintf(out, ">");
     }
@@ -714,7 +757,7 @@ static Expr *expr_print(FILE *out, Expr *expr)
         case EXPR_INT: fprintf(out, "%lld", val_int(expr));  break;
         case EXPR_FLT: fprintf(out, "%f",   val_flt(expr));  break;
         case EXPR_STR: fprintf(out, "%s",   val_str(expr)->data); break;
-        case EXPR_FUNC: fprintf(out, "<fn: %p>", func(expr)); break;
+        case EXPR_FUNC: fprintf(out, "%s", bin_func_name(func(expr))->data); break;
         case EXPR_PAIR: {
             Expr *sexp = expr;
             fputc('(', out);
