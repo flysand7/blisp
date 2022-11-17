@@ -32,10 +32,10 @@ static char const *signal_name(int signal) {
     return "UNKNOWN";
 }
 
-static void abort_handler(int signal)
+static void signal_handler(int signal)
 {
-    __builtin_trap();
     printf("[%s]: Program has been terminated\n", signal_name(signal));
+    abort();
     exit(1);
 }
 
@@ -51,12 +51,12 @@ int main(int argc, char **argv)
 
     SpallBufferInit(&spall_ctx, &spall_buffer);
 
-    signal(SIGABRT, abort_handler);
-    signal(SIGFPE, abort_handler);
-    signal(SIGILL, abort_handler);
-    signal(SIGINT, abort_handler);
-    signal(SIGSEGV, abort_handler);
-    signal(SIGTERM, abort_handler);
+    signal(SIGABRT, signal_handler);
+    signal(SIGFPE, signal_handler);
+    signal(SIGILL, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGSEGV, signal_handler);
+    signal(SIGTERM, signal_handler);
 
     log_file = fopen("blisp.log", "wb");
     Parser p = {0};
