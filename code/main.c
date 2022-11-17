@@ -35,7 +35,14 @@ static char const *signal_name(int signal) {
 static void signal_handler(int signal)
 {
     printf("[%s]: Program has been terminated\n", signal_name(signal));
-    abort();
+    // Debug break
+    #if !defined(NDEBUG)
+        #if defined(__GNUC__)
+            __builtin_trap();
+        #else
+            __debugbreak();
+        #endif
+    #endif
     exit(1);
 }
 
@@ -56,9 +63,8 @@ int main(int argc, char **argv)
     signal(SIGILL, signal_handler);
     signal(SIGINT, signal_handler);
     signal(SIGSEGV, signal_handler);
-    signal(SIGTERM, signal_handler);
 
-    log_file = fopen("blisp.log", "wb");
+    // log_file = fopen("blisp.log", "wb");
     Parser p = {0};
 
     mem_init();

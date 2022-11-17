@@ -3,10 +3,8 @@
 
 static Expr f_is_nil(Expr args)
 {
-    trace_startf();
     assert(is_nil(cdr(args)));
     Expr expr = car(args);
-    trace_end();
     return expr_bool(is_nil(expr));
 }
 
@@ -14,10 +12,8 @@ static Expr f_is_nil(Expr args)
 
 static Expr f_is_int(Expr args)
 {
-    trace_startf();
     assert(is_nil(cdr(args)));
     Expr expr = car(args);
-    trace_end();
     return expr_bool(is_int(expr));
 }
 

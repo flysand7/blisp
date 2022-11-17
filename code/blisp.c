@@ -338,7 +338,6 @@ bind:
 
 static Expr make_frame(Expr parent, Expr env, Expr op, Expr args)
 {
-    trace_startf();
     Expr frame =
         cons(parent,
         cons(env,
@@ -348,13 +347,11 @@ static Expr make_frame(Expr parent, Expr env, Expr op, Expr args)
         cons(expr_nil(),
         cons(expr_nil(),
         cons(expr_nil(), expr_nil()))))))));
-    trace_end();
     return frame;
 }
 
 static Expr eval_do_exec(Expr *stack, Expr *env)
 {
-    trace_startf();
     Expr body;
     *env = frame_env(*stack);
     body = frame_body(*stack);
@@ -366,13 +363,11 @@ static Expr eval_do_exec(Expr *stack, Expr *env)
     else {
         frame_body(*stack) = body;
     }
-    trace_end();
     return expr;
 }
 
 static Expr eval_do_bind(Expr *stack, Expr *env)
 {
-    trace_startf();
     Expr body = frame_body(*stack);
     if(!is_nil(body)) {
         return eval_do_exec(stack, env);
@@ -387,13 +382,11 @@ static Expr eval_do_bind(Expr *stack, Expr *env)
     bind_pars(*env, pars, args);
     frame_ev_arg(*stack) = expr_nil();
     Expr ret = eval_do_exec(stack, env);
-    trace_end();
     return ret;
 }
 
 static Expr eval_do_apply(Expr *stack, Expr *env, Expr *result)
 {
-    trace_startf();
     Expr op = frame_ev_op(*stack);
     Expr args = frame_ev_arg(*stack);
     if(!is_nil(args)) {
@@ -426,31 +419,26 @@ static Expr eval_do_apply(Expr *stack, Expr *env, Expr *result)
     }
     if(is_func(op)) {
         *stack = frame_parent(*stack);
-        trace_end();
         return cons(op, args);
     }
     else if(is_closure(op)) {
         Expr ret = eval_do_bind(stack, env);
-        trace_end();
         return ret;
     }
     else {
         // TODO: I should implement custom format specifiers for this
         // to work properly
         fatal_error("Trying to apply a non-callable object");
-        trace_end();
         return expr_nil();
     }
 }
 
 static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
-    trace_startf();
     *env = frame_env(*stack);
     Expr op = frame_ev_op(*stack);
     Expr body = frame_body(*stack);
     if(!is_nil(body)) {
         Expr ret = eval_do_apply(stack, env, result);
-        trace_end();
         return ret;
     }
     if(is_nil(op)) {
@@ -462,7 +450,6 @@ static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
             frame_ev_op(*stack) = op;
             frame_ev_arg(*stack) = args;
             Expr ret = eval_do_bind(stack, env);
-            trace_end();
             return ret;
         }
     }
@@ -471,7 +458,6 @@ static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
             Expr pattern = frame_ev_arg(*stack);
             env_bind(*env, pattern, *result);
             *stack = car(*stack);
-            trace_end();
             return cons(expr_sym("quote"), cons(pattern, expr_nil()));
         }
         else if(sym_is(op, intern_if)) {
@@ -480,7 +466,6 @@ static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
             if(!is_int(*result)) {
                 fatal_error("The if condition must be a bool.");
             }
-            trace_end();
             return val_bool(*result)? car(args) : car(cdr(args));
         }
         else {
@@ -489,7 +474,6 @@ static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
     }
     else if(is_macro(op)) {
         *stack = car(*stack);
-        trace_end();
         return *result;
     }
     else {
@@ -500,11 +484,9 @@ store_arg:;
     Expr args = frame_arg(*stack);
     if(is_nil(args)) {
         Expr ret = eval_do_apply(stack, env, result);
-        trace_end();
         return ret;
     }
     frame_arg(*stack) = cdr(args);
-    trace_end();
     return car(args);
 }
 
@@ -515,7 +497,6 @@ static Expr eval(Expr env, Expr expr)
     Expr result;
     int gc_counter = 0;
     do {
-        trace_startf();
         if(++gc_counter == 1000000) {
             gc_mark(expr);
             gc_mark(env);
@@ -565,7 +546,6 @@ static Expr eval(Expr env, Expr expr)
                         frame_ev_op(stack) = op;
                         frame_ev_arg(stack) = name;
                         expr = car(exprs);
-                        trace_end();
                         continue;
                     }
                     else if(is_pair(pat)) {
@@ -609,7 +589,6 @@ static Expr eval(Expr env, Expr expr)
                             exit(1);
                         }
                     }
-                    trace_end();
                     continue;
                 }
                 else if(sym_is(op, intern_lambda)) {
@@ -639,7 +618,6 @@ static Expr eval(Expr env, Expr expr)
                     stack = make_frame(stack, env, op, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
-                    trace_end();
                     continue;
                 }
                 else {
@@ -653,16 +631,13 @@ static Expr eval(Expr env, Expr expr)
 push:
                 stack = make_frame(stack, env, op, args);
                 expr = op;
-                trace_end();
                 continue;
             }
         }
         if(is_nil(stack)) {
-            trace_end();
             break;
         }
         expr = eval_do_return(&stack, &env, &result);
-        trace_end();
     } while(true);
     return result;
 }
