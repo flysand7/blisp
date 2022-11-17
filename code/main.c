@@ -64,8 +64,8 @@ int main(int argc, char **argv)
     mem_init();
     interns_init();
 
-    Expr *env = env_default(make_nil());
-    if(!run_file(env, "std/std.lsp")) {
+    Expr env = env_default(expr_nil());
+    if(!run_file(env, "std/std.lsp", NULL)) {
         printf("[warning]: std/std.lsp wasn't loaded.");
     }
 
@@ -85,16 +85,16 @@ int main(int argc, char **argv)
             putchar('>');
             gets_s(input, sizeof input);
             parser_init(&p, "repl@stdin", input);
-            Expr *code = parse_root_expr(&p);
-            if(code != nil) {
-                Expr *result = eval(env, code);
+            Expr code;
+            if(parse_root_expr(&p, &code)) {
+                Expr result = eval(env, code);
                 expr_print(stdout, result);
             }
         }
     }
     else {
         if(!setjmp(error_return_buf)) {
-            if(!run_file(env, filename)) {
+            if(!run_file(env, filename, NULL)) {
                 printf("[error]: file %s isn't found\n", filename);
                 exit(1);
             }

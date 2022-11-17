@@ -39,14 +39,6 @@ static Intern *intern_get(InternBuffer *buffer, char *cstr) {
             return intern;
         }
     }
-    // // Make a copy of the string
-    // char *str = malloc(str_len+1);
-    // char *dst = str;
-    // while(*cstr != 0) {
-    //     *dst++ = *cstr++;
-    // }
-    // *dst = 0;
-    // Add intern
     if(buffer->ninterns + 1 > buffer->max_interns) {
         assert(false);
     }

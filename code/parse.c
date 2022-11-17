@@ -125,7 +125,7 @@ void lex_match_whitespace(Parser *p)
             lex_advance(p);
         }
         else if(lex_is(p, ';')) {
-            until(lex_is(p, 0) || lex_is(p, '\n')) {
+            while(!(lex_is(p, 0) || lex_is(p, '\n'))) {
                 lex_advance(p);
             }
         }
@@ -202,10 +202,10 @@ void lex_literal(Parser *p)
 
 void lex_str(Parser *p)
 {
-    char *str = nil;
+    char *str = NULL;
     i64 str_len = 0;
     lex_match(p, '"');
-    until(lex_is(p, '"') || lex_is_eof(p)) {
+    while(!(lex_is(p, '"') || lex_is_eof(p))) {
         char c = lex_last(p);
         if(lex_match(p, '\\')) {
             c = lex_last(p);
@@ -299,84 +299,132 @@ void parser_init(Parser *p, char *fname, char *text)
     parse_next_token(p);
 }
 
-Expr *parse_expr(Parser *p)
+static void list_plugb(Expr *list, Expr value)
+{
+    if(is_nil(*list))
+        *list = value;
+    else if(is_nil(cdr(*list)))
+        cdr(*list) = value;
+    else
+        list_plugb(&cdr(*list), value);
+}
+
+static void list_pushb(Expr *list, Expr element)
+{
+    list_plugb(list, cons(element, expr_nil()));
+}
+
+bool parse_expr(Parser *p, Expr *result)
 {
     if(token_match_lparen(p)) {
-        Expr *list = make_nil();
-        until(token_is_rparen(p) || token_is_eof(p)) {
-            Expr *expr = parse_expr(p);
+        Expr list = expr_nil();
+        while(!(token_is_rparen(p) || token_is_eof(p))) {
+            Expr expr;
+            bool ok = parse_expr(p, &expr);
+            if(!ok) {
+                return false;
+            }
             if(token_match_dot(p)) {
-                Expr *car_val = expr;
-                Expr *cdr_val = parse_expr(p);
+                Expr car_val = expr;
+                Expr cdr_val;
+                bool ok = parse_expr(p, &cdr_val);
+                if(!ok) {
+                    return false;
+                }
                 expr = cons(car_val, cdr_val);
-                list_plugb(list, expr);
+                list_plugb(&list, expr);
                 break;
             }
             else {
-                list_pushb(list, expr);
+                list_pushb(&list, expr);
             }
         }
         if(!token_match_rparen(p)) {
             parse_fatal_error(p, "Expected ')'");
         }
-        return list;
+        *result = list;
+        return true;
     }
     else if(token_is_int(p)) {
-        Expr *expr = make_int(token_int_value(p));
+        Expr expr = expr_int(token_int_value(p));
         parse_next_token(p);
-        return expr;
+        *result = expr;
+        return true;
     }
     else if(token_is_flt(p)) {
-        Expr *expr = make_flt(token_flt_value(p));
+        Expr expr = expr_flt(token_flt_value(p));
         parse_next_token(p);
-        return expr;
+        *result = expr;
+        return true;
     }
     else if(token_is_str(p)) {
-        Expr *expr = make_str(token_str_value(p));
+        Expr expr = expr_str(token_str_value(p));
         parse_next_token(p);
-        return expr;
+        *result = expr;
+        return true;
     }
     else if(token_is_sym(p)) {
-        Expr *expr = make_sym(token_str_value(p));
+        Expr expr = expr_sym(token_str_value(p));
         parse_next_token(p);
-        return expr;
+        *result = expr;
+        return true;
     }
     else if(token_match_quote(p)) {
-        Expr *arg = parse_expr(p);
-        return cons(make_sym("quote"), cons(arg, make_nil()));
+        Expr arg;
+        bool ok = parse_expr(p, &arg);
+        if(!ok) {
+            return false;
+        }
+        *result = cons(expr_sym("quote"), cons(arg, expr_nil()));
+        return true;
     }
     else if(token_match_quasiquote(p)) {
-        Expr *arg = parse_expr(p);
-        return cons(make_sym("quasiquote"), cons(arg, make_nil()));
+        Expr arg;
+        bool ok = parse_expr(p, &arg);
+        if(!ok) {
+            return false;
+        }
+        *result = cons(expr_sym("quasiquote"), cons(arg, expr_nil()));
+        return true;
     }
     else if(token_match_unquote(p)) {
-        Expr *arg = parse_expr(p);
-        return cons(make_sym("unquote"), cons(arg, make_nil()));
+        Expr arg;
+        bool ok = parse_expr(p, &arg);
+        if(!ok) {
+            return false;
+        }
+        *result = cons(expr_sym("unquote"), cons(arg, expr_nil()));
+        return true;
     }
     else if(token_match_unquote_splicing(p)) {
-        Expr *arg = parse_expr(p);
-        return cons(make_sym("unquote-splicing"), cons(arg, make_nil()));
+        Expr arg;
+        bool ok = parse_expr(p, &arg);
+        if(!ok) {
+            return false;
+        }
+        *result = cons(expr_sym("unquote-splicing"), cons(arg, expr_nil()));
+        return true;
     }
     else if(token_is_eof(p)) {
         parse_fatal_error(p, "Unexpected EOF.");
     }
     else assert(false);
 
-    return nil;
+    return false;
 }
 
-Expr *parse_root_expr(Parser *p)
+bool parse_root_expr(Parser *p, Expr *result)
 {
     if(token_is_eof(p)) {
-        return nil;
+        return false;
     }
-    return parse_expr(p);
+    return parse_expr(p, result);
 }
 
 char *read_file(char *filename)
 {
     FILE *file = fopen(filename, "rb");
-    if(file == nil) return nil;
+    if(file == NULL) return NULL;
     fseek(file, 0, SEEK_END);
     i64 fsize = ftell(file);
     fseek(file, 0, SEEK_SET);
@@ -389,20 +437,27 @@ char *read_file(char *filename)
     return text;
 }
 
-static Expr *run_file(Expr *env, char *filename)
+static int run_file(Expr env, char *filename, Expr *result)
 {
     trace_start(filename, strlen(filename));
     Parser p;
     char *text = read_file(filename);
-    if(text == nil) {
-        return nil;
+    if(text == NULL) {
+        return false;
     }
-    Expr *result = make_nil();
+    Expr ret = expr_nil();
     parser_init(&p, filename, text);
-    until(token_is_eof(&p)) {
-        Expr *code = parse_expr(&p);
-        result = eval(env, code);
+    while(!token_is_eof(&p)) {
+        Expr code;
+        bool ok = parse_expr(&p, &code);
+        if(!ok) {
+            return false;
+        }
+        ret = eval(env, code);
+    }
+    if(result != NULL) {
+        *result = ret;
     }
     trace_end();
-    return result;
+    return true;
 }

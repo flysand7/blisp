@@ -5,7 +5,7 @@ struct BinFuncDesc {
     Intern *name;
 };
 
-static BinFuncDesc *bin_func_list = nil;
+static BinFuncDesc *bin_func_list = NULL;
 static i64 bin_func_count = 0;
 
 static void fatal_error(char *msg, ...)
@@ -19,90 +19,81 @@ static void fatal_error(char *msg, ...)
     va_end(args);
 }
 
-static void expr_to_atom(Expr *expr)
-{
-    atom(expr) = true;
-}
-
-static Expr *new_expr(ExprKind kind, bool atomic)
-{
-    Alloc *alloc = mem_pool_alloc(&mem_pool);
-    Expr *expr = &alloc->expr;
-    kind(expr) = kind;
-    atom(expr) = atomic;
-    return expr;
-}
-
-// Garbage collection
-
 // Nil
 
-static Expr *make_nil()
+static Expr expr_nil()
 {
-    return new_expr(EXPR_NIL, true);
+    Expr result;
+    kind(result) = EXPR_NIL;
+    return result;
 }
 
 // Numbers
 
-static Expr *make_int(i64 value)
+static Expr expr_int(i64 value)
 {
-    Expr *expr = new_expr(EXPR_INT, true);
-    val_int(expr) = value;
-    return expr;
+    Expr result;
+    kind(result) = EXPR_INTEGER;
+    val_int(result) = value;
+    return result;
 }
 
 // Floats
 
-static Expr *make_flt(f64 value)
+static Expr expr_flt(f64 value)
 {
-    Expr *expr = new_expr(EXPR_FLT, true);
-    val_flt(expr) = value;
-    return expr;
+    Expr result;
+    kind(result) = EXPR_FLOAT;
+    val_flt(result) = value;
+    return result;
 }
 
 // Booleans
 
-static Expr *make_bool(bool b)
+static Expr expr_bool(bool b)
 {
-    return make_int(b);
+    return expr_int(b);
 }
 
-static bool val_bool(Expr *expr)
+static bool val_bool(Expr expr)
 {
     return val_int(expr);
 }
 
 // Strings
 
-static Expr *make_str(char *str)
+static Expr expr_str(char *str)
 {
-    Expr *expr = new_expr(EXPR_STR, true);
-    val_str(expr) = intern_get(&intern_buf, str);
-    return expr;
+    Expr result;
+    kind(result) = EXPR_STRING;
+    val_str(result) = intern_get(&intern_buf, str);
+    return result;
 }
 
 // Symbols
 
-static Expr *make_sym(char *name)
+static Expr expr_sym(char *name)
 {
-    Expr *expr = new_expr(EXPR_SYM, false);
+    Expr expr;
+    kind(expr) = EXPR_SYMBOL;
     val_sym(expr) = intern_get(&intern_buf, name);
     return expr;
 }
 
-static Expr *make_sym_intern(Intern *str) {
-    Expr *expr = new_expr(EXPR_SYM, false);
+static Expr expr_sym_intern(Intern *str) {
+    Expr expr;
+    kind(expr) = EXPR_SYMBOL;
     val_sym(expr) = str;
     return expr;
 }
 
-static bool sym_eq(Expr *sym1, Expr *sym2)
+static bool sym_eq(Expr sym1, Expr sym2)
 {
     assert(is_sym(sym1) && is_sym(sym2));
     return val_sym(sym1) == val_sym(sym2);
 }
 
-static bool sym_is(Expr *sym, Intern *name)
+static bool sym_is(Expr sym, Intern *name)
 {
     assert(is_sym(sym));
     return val_sym(sym) == name;
@@ -110,50 +101,23 @@ static bool sym_is(Expr *sym, Intern *name)
 
 // Pairs
 
-static Expr *cons(Expr *car_val, Expr *cdr_val)
+static Expr cons(Expr car_val, Expr cdr_val)
 {
-    Expr *expr = new_expr(EXPR_PAIR, false);
-    car(expr) = car_val;
-    cdr(expr) = cdr_val;
-    return expr;
+    Expr result;
+    result.kind = EXPR_PAIR;
+    result.pair = (Pair *)mem_pool_alloc(&mem_pool);
+    car(result) = car_val;
+    cdr(result) = cdr_val;
+    return result;
 }
 
 // Lists
 
-static Expr *list(int n, ...)
+static void list_reverse(Expr *list)
 {
-    Expr *list = make_nil();
-    va_list args;
-    va_start(args, n);
-    for(i64 i = 0; i != n; ++i) {
-        Expr *element = va_arg(args, Expr *);
-        list_pushb(list, element);
-    }
-    va_end(args);
-    return list;
-}
-
-static void list_plugb(Expr *list, Expr *value)
-{
-    if(is_nil(list))
-        *list = *value; // fuck i don't like this
-    else if(is_nil(cdr(list)))
-        cdr(list) = value;
-    else
-        list_plugb(cdr(list), value);
-}
-
-static void list_pushb(Expr *list, Expr *element)
-{
-    assert(is_list(list));
-    list_plugb(list, cons(element, make_nil()));
-}
-
-static void list_reverse(Expr **list)
-{
-    Expr *tail = make_nil();
+    Expr tail = expr_nil();
     while(!is_nil(*list)) {
-        Expr *p = cdr(*list);
+        Expr p = cdr(*list);
         cdr(*list) = tail;
         tail = *list;
         *list = p;
@@ -161,17 +125,7 @@ static void list_reverse(Expr **list)
     *list = tail;
 }
 
-static i64 listn(Expr *list)
-{
-    i64 count = 0;
-    while(!is_nil(list)) {
-        count += 1;
-        list = cdr(list);
-    }
-    return count;
-}
-
-static Expr *list_ith(Expr *list, i64 i)
+static Expr list_ith(Expr list, i64 i)
 {
     for(i64 k = 0; k != i; ++k) {
         list = cdr(list);
@@ -179,84 +133,67 @@ static Expr *list_ith(Expr *list, i64 i)
     return car(list);
 }
 
-static void list_set(Expr *list, i64 i, Expr *value) {
+static void list_set(Expr list, i64 i, Expr value) {
     while(i--) {
         list = cdr(list);
     }
     car(list) = value;
 }
 
-static bool is_list(Expr *expr)
-{
-    while(is_pair(expr)) {
-        expr = cdr(expr);
-    }
-    if(is_nil(expr)) {
-        return true;
-    }
-    return false;
-}
-
 // C functions
 
-static Expr *make_func(Func *f)
+static Expr make_func(Func *f)
 {
-    Expr *expr = new_expr(EXPR_FUNC, true);
+    Expr expr;
+    kind(expr) = EXPR_FUNCTION;
     func(expr) = f;
     return expr;
 }
 
 // Closures
 
-static bool is_closure(Expr *expr)
+static bool is_closure(Expr expr)
 {
-    if(is_pair(expr)) {
-        Expr *flag = car(expr);
-        if(is_sym(flag) && sym_is(flag, intern_closure)) {
-            return true;
-        }
-    }
-    return false;
+    return kind(expr) == EXPR_CLOSURE;
 }
 
-static Expr *make_closure(Expr *env, Expr *pars, Expr *body)
+static Expr make_closure(Expr env, Expr pars, Expr body)
 {
-    assert(is_pair(body));
-    Expr *closure = cons(make_sym_intern(intern_closure), cons(env, cons(pars, cons(body, make_nil()))));
-    expr_to_atom(closure);
+    Expr closure = cons(env, cons(pars, cons(body, expr_nil())));
+    kind(closure) = EXPR_CLOSURE;
     return closure;
 }
 
 // Macros
 
-static bool is_macro(Expr *expr)
+static bool is_macro(Expr expr)
 {
-    return is_closure(expr) && expr->macro;
+    return kind(expr) == EXPR_MACRO;
 }
 
-static Expr *make_macro(Expr *env, Expr *pars, Expr *body)
+static Expr make_macro(Expr env, Expr pars, Expr body)
 {
-    Expr *macro = make_closure(env, pars, body);
-    macro->macro = true;
-    return macro;
+    Expr closure = cons(env, cons(pars, cons(body, expr_nil())));
+    kind(closure) = EXPR_MACRO;
+    return closure;
 }
 
 
 // Environment
 
-static Expr *env_create(Expr *parent)
+static Expr env_create(Expr parent)
 {
-    return cons(parent, make_nil());
+    return cons(parent, expr_nil());
 }
 
-static void add_bin_func(Expr *env, char *name, Func *func) {
+static void add_bin_func(Expr env, char *name, Func *func) {
     bin_func_list = realloc(bin_func_list, (bin_func_count+1)*sizeof(BinFuncDesc));
     Intern *iname = intern_get(&intern_buf, name);
     bin_func_list[bin_func_count++] = (BinFuncDesc) {
         .name = iname,
         .func = func,
     };
-    env_bind(env, make_sym_intern(iname), make_func(func));
+    env_bind(env, expr_sym_intern(iname), make_func(func));
 }
 
 static Intern *bin_func_name(Func *func) {
@@ -266,23 +203,22 @@ static Intern *bin_func_name(Func *func) {
             return desc.name;
         }
     }
-    return nil;
+    return NULL;
 }
 
-static Expr *env_default(Expr *parent)
+static Expr env_default(Expr parent)
 {
-    Expr *env = env_create(parent);
+    Expr env = env_create(parent);
 
-    env_bind(env, make_sym("nil"),    make_nil());
-    env_bind(env, make_sym("inf"),    make_flt(INFINITY));
-    env_bind(env, make_sym("nan"),    make_flt(NAN));
+    env_bind(env, expr_sym("nil"),    expr_nil());
+    env_bind(env, expr_sym("inf"),    expr_flt(INFINITY));
+    env_bind(env, expr_sym("nan"),    expr_flt(NAN));
 
     add_bin_func(env, "int?",         f_is_int);
     add_bin_func(env, "flt?",         f_is_flt);
     add_bin_func(env, "nil?",         f_is_nil);
     add_bin_func(env, "sym?",         f_is_sym);
     add_bin_func(env, "pair?",        f_is_pair);
-    add_bin_func(env, "list?",        f_is_list);
     add_bin_func(env, "func?",        f_is_func);
 
     // Integers
@@ -338,41 +274,45 @@ static Expr *env_default(Expr *parent)
     return env;
 }
 
-static Expr *env_lookup(Expr *env, Expr *symbol)
+static bool env_lookup(Expr env, Expr symbol, Expr *value)
 {
     assert(is_sym(symbol));
     while(!is_nil(env)) {
-        Expr *bindings = env_bindings(env);
-        foreach(bind, bindings) {
+        Expr bindings = env_bindings(env);
+        while(!is_nil(bindings)) {
+            Expr bind = car(bindings);
             if(sym_eq(symbol, bind_sym(bind))) {
-                trace_end();
-                return bind_val(bind);
+                *value = bind_val(bind);
+                return true;
             }
+            bindings = cdr(bindings);
         };
         env = env_parent(env);
     }
-    return nil;
+    return false;
 }
 
-static void env_bind(Expr *env, Expr *symbol, Expr *value)
+static void env_bind(Expr env, Expr symbol, Expr value)
 {
     assert(is_sym(symbol));
     bool found = false;
-    Expr *bindings = env_bindings(env);
-    foreach(bind, bindings) {
+    Expr bindings = env_bindings(env);
+    while(!is_nil(bindings)) {
+        Expr bind = car(bindings);
         if(sym_eq(symbol, bind_sym(bind))) {
             bind_val(bind) = value;
             found = true;
             break;
         }
+        bindings = cdr(bindings);
     };
     if(!found) {
-        Expr *bind = cons(symbol, value);
+        Expr bind = cons(symbol, value);
         env_bindings(env) = cons(bind, env_bindings(env));
     }
 }
 
-static void bind_pars(Expr *env, Expr *pars, Expr *args)
+static void bind_pars(Expr env, Expr pars, Expr args)
 {
 bind:
     if(is_nil(pars)) {
@@ -383,7 +323,6 @@ bind:
     }
     if(is_sym(pars)) {
         env_bind(env, pars, args);
-        trace_end();
         return;
     }
     if(is_pair(pars)) {
@@ -397,29 +336,29 @@ bind:
     }
 }
 
-static Expr *make_frame(Expr *parent, Expr *env, Expr *op, Expr *args)
+static Expr make_frame(Expr parent, Expr env, Expr op, Expr args)
 {
     trace_startf();
-    Expr *frame =
+    Expr frame =
         cons(parent,
         cons(env,
         cons(op,
         cons(args,
-        cons(make_nil(),
-        cons(make_nil(),
-        cons(make_nil(),
-        cons(make_nil(), make_nil()))))))));
+        cons(expr_nil(),
+        cons(expr_nil(),
+        cons(expr_nil(),
+        cons(expr_nil(), expr_nil()))))))));
     trace_end();
     return frame;
 }
 
-static Expr *eval_do_exec(Expr **stack, Expr **env)
+static Expr eval_do_exec(Expr *stack, Expr *env)
 {
     trace_startf();
-    Expr *body;
+    Expr body;
     *env = frame_env(*stack);
     body = frame_body(*stack);
-    Expr *expr = car(body);
+    Expr expr = car(body);
     body = cdr(body);
     if(is_nil(body)) {
         *stack = car(*stack);
@@ -431,40 +370,40 @@ static Expr *eval_do_exec(Expr **stack, Expr **env)
     return expr;
 }
 
-static Expr *eval_do_bind(Expr **stack, Expr **env)
+static Expr eval_do_bind(Expr *stack, Expr *env)
 {
     trace_startf();
-    Expr *body = frame_body(*stack);
+    Expr body = frame_body(*stack);
     if(!is_nil(body)) {
         return eval_do_exec(stack, env);
     }
-    Expr *op = frame_ev_op(*stack);
-    Expr *args = frame_ev_arg(*stack);
+    Expr op = frame_ev_op(*stack);
+    Expr args = frame_ev_arg(*stack);
     *env = env_create(closure_env(op));
-    Expr *pars = closure_params(op);
+    Expr pars = closure_params(op);
     body = closure_body(op);
     frame_env(*stack) = *env;
     frame_body(*stack) = body;
     bind_pars(*env, pars, args);
-    frame_ev_arg(*stack) = make_nil();
-    Expr *ret = eval_do_exec(stack, env);
+    frame_ev_arg(*stack) = expr_nil();
+    Expr ret = eval_do_exec(stack, env);
     trace_end();
     return ret;
 }
 
-static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
+static Expr eval_do_apply(Expr *stack, Expr *env, Expr *result)
 {
     trace_startf();
-    Expr *op = frame_ev_op(*stack);
-    Expr *args = frame_ev_arg(*stack);
+    Expr op = frame_ev_op(*stack);
+    Expr args = frame_ev_arg(*stack);
     if(!is_nil(args)) {
         list_reverse(&args);
         frame_ev_arg(*stack) = args;
-        if(log_file != nil) {
+        if(log_file != NULL) {
             static int i = 0;
             if(i < 10000000) {
-                Expr *ev_args = frame_ev_arg(*stack);
-                Expr *ev_op = frame_ev_op(*stack);
+                Expr ev_args = frame_ev_arg(*stack);
+                Expr ev_op = frame_ev_op(*stack);
                 fprintf(log_file, "UNCACHED: ");
                 expr_print(log_file, ev_op);
                 fprintf(log_file, ", ARGS: ");
@@ -478,12 +417,9 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
         // instead of (apply, op, (args)) we execute (op, args)
         if(sym_is(op, intern_apply)) {
             *stack = car(*stack);
-            *stack = make_frame(*stack, *env, op, make_nil());
+            *stack = make_frame(*stack, *env, op, expr_nil());
             op = car(args);
             args = car(cdr(args));
-            if(!is_list(args)) {
-                fatal_error("Symbol '%s' is not defined", val_str(args)->data);
-            }
             frame_ev_op(*stack) = op;
             frame_ev_arg(*stack) = args;
         }
@@ -494,7 +430,7 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
         return cons(op, args);
     }
     else if(is_closure(op)) {
-        Expr *ret = eval_do_bind(stack, env);
+        Expr ret = eval_do_bind(stack, env);
         trace_end();
         return ret;
     }
@@ -503,17 +439,17 @@ static Expr *eval_do_apply(Expr **stack, Expr **env, Expr **result)
         // to work properly
         fatal_error("Trying to apply a non-callable object");
         trace_end();
-        return make_nil();
+        return expr_nil();
     }
 }
 
-static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
+static Expr eval_do_return(Expr *stack, Expr *env, Expr *result) {
     trace_startf();
     *env = frame_env(*stack);
-    Expr *op = frame_ev_op(*stack);
-    Expr *body = frame_body(*stack);
+    Expr op = frame_ev_op(*stack);
+    Expr body = frame_body(*stack);
     if(!is_nil(body)) {
-        Expr *ret = eval_do_apply(stack, env, result);
+        Expr ret = eval_do_apply(stack, env, result);
         trace_end();
         return ret;
     }
@@ -521,26 +457,25 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
         op = *result;
         frame_ev_op(*stack) = op;
         if(is_macro(op)) {
-            Expr *args = frame_arg(*stack);
-            *stack = make_frame(*stack, *env, op, make_nil());
-            op->macro = true;
+            Expr args = frame_arg(*stack);
+            *stack = make_frame(*stack, *env, op, expr_nil());
             frame_ev_op(*stack) = op;
             frame_ev_arg(*stack) = args;
-            Expr *ret = eval_do_bind(stack, env);
+            Expr ret = eval_do_bind(stack, env);
             trace_end();
             return ret;
         }
     }
     else if(is_sym(op)) {
         if(sym_is(op, intern_def)) {
-            Expr *pattern = frame_ev_arg(*stack);
+            Expr pattern = frame_ev_arg(*stack);
             env_bind(*env, pattern, *result);
             *stack = car(*stack);
             trace_end();
-            return cons(make_sym("quote"), cons(pattern, make_nil()));
+            return cons(expr_sym("quote"), cons(pattern, expr_nil()));
         }
         else if(sym_is(op, intern_if)) {
-            Expr *args = frame_arg(*stack);
+            Expr args = frame_arg(*stack);
             *stack = car(*stack);
             if(!is_int(*result)) {
                 fatal_error("The if condition must be a bool.");
@@ -559,12 +494,12 @@ static Expr *eval_do_return(Expr **stack, Expr **env, Expr **result) {
     }
     else {
 store_arg:;
-        Expr *args = frame_ev_arg(*stack);
+        Expr args = frame_ev_arg(*stack);
         frame_ev_arg(*stack) = cons(*result, args);
     }
-    Expr *args = frame_arg(*stack);
+    Expr args = frame_arg(*stack);
     if(is_nil(args)) {
-        Expr *ret = eval_do_apply(stack, env, result);
+        Expr ret = eval_do_apply(stack, env, result);
         trace_end();
         return ret;
     }
@@ -573,11 +508,11 @@ store_arg:;
     return car(args);
 }
 
-static Expr *eval(Expr *env, Expr *expr)
+static Expr eval(Expr env, Expr expr)
 {
-    Expr *stack = make_nil();
-    Expr *file_stack = make_nil();
-    Expr *result;
+    Expr stack = expr_nil();
+    Expr file_stack = expr_nil();
+    Expr result;
     int gc_counter = 0;
     do {
         trace_startf();
@@ -590,43 +525,43 @@ static Expr *eval(Expr *env, Expr *expr)
             gc_counter = 0;
         }
         // Literals are evaluated to themselves
-        if(atom(expr)) {
+        if(kind(expr) != EXPR_PAIR && kind(expr) != EXPR_SYMBOL) {
             result = expr;
         }
 
         // Symbols are evaluated to whatever they
         // are associated to in the environment.
         else if(is_sym(expr)) {
-            Expr *def = env_lookup(env, expr);
-            if(def == nil) {
+            Expr definition;
+            bool is_defined = env_lookup(env, expr, &definition);
+            if(!is_defined) {
                 fatal_error("Symbol '%s' is not defined", val_sym(expr)->data);
             }
-            result = def;
+            result = definition;
         }
 
         // (op arg1 arg2 ... argn)
         else {
-            assert(is_list(expr));
-            Expr *op   = car(expr);
-            Expr *args = cdr(expr);
+            Expr op   = car(expr);
+            Expr args = cdr(expr);
             assert(!is_nil(op));
             // Special forms, e.g quote and define
             if(is_sym(op)) {
                 if(sym_is(op, intern_quote)) {
-                    assert(listn(args) == 1);
-                    Expr *arg = car(args);
+                    // assert(listn(args) == 1);
+                    Expr arg = car(args);
                     result = arg;
                 }
                 else if(sym_is(op, intern_def)) {
-                    assert(listn(args) >= 2);
-                    Expr *pat = car(args);
-                    Expr *exprs = cdr(args);
-                    Expr *name;
-                    Expr *value;
+                    // assert(listn(args) >= 2);
+                    Expr pat = car(args);
+                    Expr exprs = cdr(args);
+                    Expr name;
+                    Expr value;
                     if(is_sym(pat)) {
-                        assert(listn(args) == 2);
+                        // assert(listn(args) == 2);
                         name = pat;
-                        stack = make_frame(stack, env, op, make_nil());
+                        stack = make_frame(stack, env, op, expr_nil());
                         frame_ev_op(stack) = op;
                         frame_ev_arg(stack) = name;
                         expr = car(exprs);
@@ -634,8 +569,8 @@ static Expr *eval(Expr *env, Expr *expr)
                         continue;
                     }
                     else if(is_pair(pat)) {
-                        Expr *params = cdr(pat);
-                        Expr *body = exprs;
+                        Expr params = cdr(pat);
+                        Expr body = exprs;
                         name = car(pat);
                         value = make_closure(env, params, body);
                         env_bind(env, name, value);
@@ -643,14 +578,14 @@ static Expr *eval(Expr *env, Expr *expr)
                     }
                 }
                 else if(sym_is(op, intern_macro)) {
-                    assert(listn(args) >= 2);
-                    Expr *pat = car(args);
-                    Expr *exprs = cdr(args);
-                    Expr *name;
-                    Expr *value;
+                    // assert(listn(args) >= 2);
+                    Expr pat = car(args);
+                    Expr exprs = cdr(args);
+                    Expr name;
+                    Expr value;
                     if(is_pair(pat)) {
-                        Expr *params = cdr(pat);
-                        Expr *body = exprs;
+                        Expr params = cdr(pat);
+                        Expr body = exprs;
                         name = car(pat);
                         value = make_macro(env, params, body);
                         env_bind(env, name, value);
@@ -678,25 +613,26 @@ static Expr *eval(Expr *env, Expr *expr)
                     continue;
                 }
                 else if(sym_is(op, intern_lambda)) {
-                    assert(listn(args) >= 2);
-                    Expr *params = car(args);
-                    Expr *body = cdr(args);
+                    // assert(listn(args) >= 2);
+                    Expr params = car(args);
+                    Expr body = cdr(args);
                     result = make_closure(env, params, body);
                 }
                 else if(sym_is(op, intern_include)) {
                     assert(!is_nil(args));
-                    foreach(arg, args) {
-                        Expr *arg = car(args);
+                    Expr arg_list = args;
+                    while(!is_nil(arg_list)) {
+                        Expr arg = car(arg_list);
                         assert(is_str(arg));
                         char *filename = val_str(arg)->data;
-                        Expr *stack_frame = list(3, arg, stack, expr);
+                        Expr stack_frame = cons(arg, cons(stack, cons(expr, expr_nil())));
                         file_stack = cons(stack_frame, file_stack);
-                        result = run_file(env, filename);
-                        if(result == nil) {
+                        if(!run_file(env, filename, &result)) {
                             printf("[error]: file %s isn't found\n", filename);
                             exit(1);
                         }
                         file_stack = cdr(file_stack);
+                        arg_list = cdr(arg_list);
                     }
                 }
                 else if(sym_is(op, intern_apply)) {
@@ -733,45 +669,56 @@ push:
 
 // Expression printing
 
-static Expr *expr_print(FILE *out, Expr *expr)
+static Expr expr_print(FILE *out, Expr expr)
 {
-    // Special data
-    if(is_macro(expr)) {
-        fprintf(out, "<macro");
-        fputc(' ', out);
-        expr_print(out, closure_params(expr));
-        // fputc(' ', out);
-        // expr_print(out, closure_body(expr));
-        fprintf(out, ">");
-    }
-    else if(is_closure(expr)) {
-        fprintf(out, "<closure");
-        fputc(' ', out);
-        expr_print(out, closure_params(expr));
-        // expr_print(out, closure_body(expr));
-        fprintf(out, ">");
-    }
-    else switch(kind(expr)) {
-        case EXPR_NIL: fprintf(out, "nil");                  break;
-        case EXPR_SYM: fprintf(out, "%s",   val_sym(expr)->data);  break;
-        case EXPR_INT: fprintf(out, "%lld", val_int(expr));  break;
-        case EXPR_FLT: fprintf(out, "%f",   val_flt(expr));  break;
-        case EXPR_STR: fprintf(out, "%s",   val_str(expr)->data); break;
-        case EXPR_FUNC: fprintf(out, "%s", bin_func_name(func(expr))->data); break;
+    switch(kind(expr)) {
+        case EXPR_NIL: {
+            fprintf(out, "nil");
+        } break;
+        case EXPR_SYMBOL: {
+            fprintf(out, "%s", val_sym(expr)->data);
+        } break;
+        case EXPR_INTEGER: {
+            fprintf(out, "%lld", val_int(expr));
+        } break;
+        case EXPR_FLOAT: {
+            fprintf(out, "%f", val_flt(expr));
+        } break;
+        case EXPR_STRING: {
+            fprintf(out, "%s", val_str(expr)->data);
+        } break;
+        case EXPR_FUNCTION: {
+            fprintf(out, "%s", bin_func_name(func(expr))->data);
+        } break;
+        case EXPR_CLOSURE: {
+            fprintf(out, "<closure");
+            fputc(' ', out);
+            expr_print(out, closure_params(expr));
+            // expr_print(out, closure_body(expr));
+            fprintf(out, ">");
+        } break;
+        case EXPR_MACRO: {
+            fprintf(out, "<macro");
+            fputc(' ', out);
+            expr_print(out, closure_params(expr));
+            // fputc(' ', out);
+            // expr_print(out, closure_body(expr));
+            fprintf(out, ">");
+        } break;
         case EXPR_PAIR: {
-            Expr *sexp = expr;
+            Expr pair = expr;
             fputc('(', out);
-            expr_print(out, car(sexp));
-            sexp = cdr(sexp);
-            while(!is_nil(sexp)) {
-                if(sexp->kind == EXPR_PAIR) {
+            expr_print(out, car(pair));
+            pair = cdr(pair);
+            while(!is_nil(pair)) {
+                if(kind(pair) == EXPR_PAIR) {
                     fputc(' ', out);
-                    expr_print(out, car(sexp));
-                    sexp = cdr(sexp);
+                    expr_print(out, car(pair));
+                    pair = cdr(pair);
                 }
                 else {
                     fprintf(out, " . ");
-                    expr_print(out, sexp);
+                    expr_print(out, pair);
                     break;
                 }
             }
@@ -781,7 +728,7 @@ static Expr *expr_print(FILE *out, Expr *expr)
     return expr;
 }
 
-static Expr *expr_println(FILE *out, Expr *expr)
+static Expr expr_println(FILE *out, Expr expr)
 {
     expr_print(out, expr);
     fputc('\n', out);

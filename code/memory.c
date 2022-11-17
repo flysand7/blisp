@@ -36,7 +36,7 @@ static void mem_buffer_create(MemPool *pool)
 static Alloc *mem_pool_alloc(MemPool *pool)
 {
     // If not enough space we create a new buffer
-    while(pool->free_head == nil) {
+    while(pool->free_head == NULL) {
         mem_buffer_create(pool);
     }
     // Extract result from the head of free-list
@@ -53,7 +53,7 @@ static Alloc *mem_pool_alloc(MemPool *pool)
 static Alloc *mem_pool_free(MemPool *pool, Alloc *prev, Alloc *alloc) {
     Alloc *next_alloc = alloc->next;
     // Stitch the hole betwee prev and next in the alloc list
-    if(prev == nil) {
+    if(prev == NULL) {
         pool->alloc_head = alloc->next;
     }
     else {
@@ -68,17 +68,17 @@ static Alloc *mem_pool_free(MemPool *pool, Alloc *prev, Alloc *alloc) {
 
 static void mem_init()
 {
-    mem_pool.free_head = nil;
-    mem_pool.alloc_head = nil;
+    mem_pool.free_head = NULL;
+    mem_pool.alloc_head = NULL;
     mem_buffer_create(&mem_pool);
 }
 
-void gc_mark(Expr *expr)
+void gc_mark(Expr expr)
 {
-    Alloc *alloc = (Alloc *)expr;
-    if(alloc->mark) return;
-    alloc->mark = true;
     if(is_pair(expr)) {
+        Alloc *alloc = (Alloc *)expr.pair;
+        if(alloc->mark) return;
+        alloc->mark = true;
         gc_mark(car(expr));
         gc_mark(cdr(expr));
     }
@@ -86,9 +86,9 @@ void gc_mark(Expr *expr)
 
 void gc_sweep() {
     trace_startf();
-    Alloc *prev = nil;
+    Alloc *prev = NULL;
     Alloc *alloc = mem_pool.alloc_head;
-    while(alloc != nil) {
+    while(alloc != NULL) {
         if(!alloc->mark) {
             alloc = mem_pool_free(&mem_pool, prev, alloc);
         }
@@ -97,7 +97,7 @@ void gc_sweep() {
             alloc = alloc->next;
         }
     }
-    for(Alloc *alloc = mem_pool.alloc_head; alloc != nil; alloc=alloc->next) {
+    for(Alloc *alloc = mem_pool.alloc_head; alloc != NULL; alloc=alloc->next) {
         alloc->mark = false;
     }
     trace_end();
