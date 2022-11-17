@@ -16,7 +16,7 @@
 
 #include "intern.c"
 #include "memory.c"
-#include "wrap.c"
+#include "builtin.c"
 #include "parse.c"
 #include "blisp.c"
 
