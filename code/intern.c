@@ -3,14 +3,14 @@
 
 struct Intern typedef Intern;
 struct Intern {
-    i64 len;
+    int64_t len;
     char *data;
 };
 
 struct InternBuffer typedef InternBuffer;
 struct InternBuffer {
-    i64    max_interns;
-    i64    ninterns;
+    int64_t max_interns;
+    int64_t ninterns;
     Intern *interns;
 };
 
@@ -26,9 +26,9 @@ Intern *intern_include;
 
 static Intern *intern_get(InternBuffer *buffer, char *cstr) {
     trace_startf();
-    i64 str_len = strlen(cstr);
+    int64_t str_len = strlen(cstr);
     // Search the intern buffer for the string that interests us
-    for(i64 i = 0; i != buffer->ninterns; ++i) {
+    for(int64_t i = 0; i != buffer->ninterns; ++i) {
         Intern *intern = &buffer->interns[i];
         bool found = true;
         if(intern->len != str_len) {

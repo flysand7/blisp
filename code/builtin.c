@@ -26,7 +26,7 @@ static Expr f_int_neg(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_int(op1));
-    i64 i1 = val_int(op1);
+    int64_t i1 = val_int(op1);
     return expr_int(-i1);
 }
 
@@ -35,7 +35,7 @@ static Expr f_int_bnot(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_int(op1));
-    i64 i1 = val_int(op1);
+    int64_t i1 = val_int(op1);
     return expr_int(~i1);
 }
 
@@ -45,8 +45,8 @@ static Expr f_int_add(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 + i2);
 }
 
@@ -56,8 +56,8 @@ static Expr f_int_sub(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 - i2);
 }
 
@@ -67,8 +67,8 @@ static Expr f_int_mul(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 * i2);
 }
 
@@ -78,8 +78,8 @@ static Expr f_int_div(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 / i2);
 }
 
@@ -89,8 +89,8 @@ static Expr f_int_rem(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 % i2);
 }
 
@@ -100,8 +100,8 @@ static Expr f_int_les(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 < i2);
 }
 
@@ -111,8 +111,8 @@ static Expr f_int_grt(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 > i2);
 }
 
@@ -122,8 +122,8 @@ static Expr f_int_eq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 == i2);
 }
 
@@ -133,8 +133,8 @@ static Expr f_int_neq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 != i2);
 }
 
@@ -144,8 +144,8 @@ static Expr f_int_leq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 <= i2);
 }
 
@@ -155,8 +155,8 @@ static Expr f_int_geq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_bool(i1 >= i2);
 }
 
@@ -166,8 +166,8 @@ static Expr f_int_band(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 & i2);
 }
 
@@ -177,8 +177,8 @@ static Expr f_int_bor(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 | i2);
 }
 
@@ -188,8 +188,8 @@ static Expr f_int_bxor(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_int(op1) && is_int(op2));
-    i64 i1 = val_int(op1);
-    i64 i2 = val_int(op2);
+    int64_t i1 = val_int(op1);
+    int64_t i2 = val_int(op2);
     return expr_int(i1 ^ i2);
 }
 
@@ -207,8 +207,8 @@ static Expr f_flt_from_int(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_int(op1));
-    i64 i1 = val_int(op1);
-    return expr_flt((f64)i1);
+    int64_t i1 = val_int(op1);
+    return expr_flt((double)i1);
 }
 
 static Expr f_flt_floor(Expr args)
@@ -216,7 +216,7 @@ static Expr f_flt_floor(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_int(floor(f1));
 }
 
@@ -225,7 +225,7 @@ static Expr f_flt_ceil(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_int(ceil(f1));
 }
 
@@ -234,7 +234,7 @@ static Expr f_flt_round(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_int(round(f1));
 }
 
@@ -243,7 +243,7 @@ static Expr f_flt_trunc(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_int(trunc(f1));
 }
 
@@ -252,7 +252,7 @@ static Expr f_flt_neg(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_flt(-f1);
 }
 
@@ -261,7 +261,7 @@ static Expr f_flt_is_inf(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_bool(isinf(f1));
 }
 
@@ -270,7 +270,7 @@ static Expr f_flt_is_nan(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_bool(isnan(f1));
 }
 
@@ -279,7 +279,7 @@ static Expr f_flt_is_normal(Expr args)
     assert(is_nil(cdr(args)));
     Expr op1 = car(args);
     assert(is_flt(op1));
-    f64 f1 = val_flt(op1);
+    double f1 = val_flt(op1);
     return expr_bool(isnormal(f1));
 }
 
@@ -289,8 +289,8 @@ static Expr f_flt_add(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_flt(f1 + f2);
 }
 
@@ -300,8 +300,8 @@ static Expr f_flt_sub(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_flt(f1 - f2);
 }
 
@@ -311,8 +311,8 @@ static Expr f_flt_mul(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_flt(f1 * f2);
 }
 
@@ -322,8 +322,8 @@ static Expr f_flt_div(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_flt(f1 / f2);
 }
 
@@ -333,8 +333,8 @@ static Expr f_flt_les(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 < f2);
 }
 
@@ -344,8 +344,8 @@ static Expr f_flt_grt(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 > f2);
 }
 
@@ -355,8 +355,8 @@ static Expr f_flt_eq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 == f2);
 }
 
@@ -366,8 +366,8 @@ static Expr f_flt_neq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 != f2);
 }
 
@@ -377,8 +377,8 @@ static Expr f_flt_leq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 <= f2);
 }
 
@@ -388,8 +388,8 @@ static Expr f_flt_geq(Expr args)
     Expr op1 = car(args);
     Expr op2 = car(cdr(args));
     assert(is_flt(op1) && is_flt(op2));
-    f64 f1 = val_flt(op1);
-    f64 f2 = val_flt(op2);
+    double f1 = val_flt(op1);
+    double f2 = val_flt(op2);
     return expr_bool(f1 >= f2);
 }
 

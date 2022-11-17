@@ -2,12 +2,10 @@
 #if !defined(BLISP_H)
 #define BLISP_H
 
-uint8_t  typedef u8;
-int8_t   typedef i8;
-uint64_t typedef u64;
-int64_t  typedef i64;
-float    typedef f32;
-double   typedef f64;
+#include <stdint.h>
+#include <stdbool.h>
+#include <setjmp.h>
+#include <stdio.h>
 
 FILE *log_file = NULL;
 
@@ -35,8 +33,8 @@ struct Expr {
     union {
         Pair   *pair;
         Intern *val_str;
-        i64     val_int;
-        f64     val_flt;
+        int64_t val_int;
+        double  val_flt;
         Func   *func;
     };
 };
@@ -64,8 +62,8 @@ static Expr *new_expr(ExprKind kind, bool atomic);
 static Expr  expr_nil();
 
 // Numbers
-static Expr  expr_int(i64 value);
-static Expr  expr_flt(f64 value);
+static Expr  expr_int(int64_t value);
+static Expr  expr_flt(double value);
 #define      val_int(e) ((e).val_int)
 #define      val_flt(e) ((e).val_flt)
 #define      is_int(e) (kind(e) == EXPR_INTEGER)
@@ -100,8 +98,8 @@ static Expr cons(Expr car_val, Expr cdr_val);
 
 // Lists
 static void  list_reverse(Expr *list);
-static Expr  list_ith(Expr list, i64 i);
-static void  list_set(Expr list, i64 i, Expr value);
+static Expr  list_ith(Expr list, int i);
+static void  list_set(Expr list, int i, Expr value);
 
 // C functions
 static Expr  make_func(Func *f);

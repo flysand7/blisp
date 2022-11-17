@@ -3,7 +3,7 @@
 
 struct MemBuffer typedef MemBuffer;
 struct MemBuffer {
-    u64   nallocs;
+    uint64_t nallocs;
     Alloc *allocs;
     MemBuffer *next;
 };

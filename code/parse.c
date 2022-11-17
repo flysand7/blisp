@@ -19,8 +19,8 @@ struct Token typedef Token;
 struct Token {
     TkType type;
     char *str;
-    i64 i;
-    f64 flt;
+    int64_t i;
+    double flt;
 };
 
 struct Parser typedef Parser;
@@ -28,8 +28,8 @@ struct Parser {
     char *stream;
     Token last_token;
     char *fname;
-    i64 line;
-    i64 col;
+    int64_t line;
+    int64_t col;
 };
 
 static void parse_fatal_error(Parser *p, char *msg, ...)
@@ -43,7 +43,7 @@ static void parse_fatal_error(Parser *p, char *msg, ...)
     va_end(args);
 }
 
-bool is_whitespace_char(i64 c)
+bool is_whitespace_char(int64_t c)
 {
     return 
            c == ' '
@@ -54,22 +54,22 @@ bool is_whitespace_char(i64 c)
 }
 
 
-bool is_digit_char(i64 c)
+bool is_digit_char(int64_t c)
 {
     return '0' <= c && c <= '9';
 }
 
-bool is_literal_char(i64 c)
+bool is_literal_char(int64_t c)
 {
     return !(c == '(' || c == ')' || c == 0 || is_whitespace_char(c));
 }
 
-i64 char_digit_value(i64 c)
+int64_t char_digit_value(int64_t c)
 {
     return c - '0';
 }
 
-i64 lex_last(Parser *p)
+int64_t lex_last(Parser *p)
 {
     return *p->stream;
 }
@@ -84,7 +84,7 @@ void lex_advance(Parser *p)
     }
 }
 
-bool lex_is(Parser *p, i64 i)
+bool lex_is(Parser *p, int64_t i)
 {
     return lex_last(p) == i;
 }
@@ -109,7 +109,7 @@ bool lex_is_eof(Parser *p)
     return lex_last(p) == 0;
 }
 
-bool lex_match(Parser *p, i64 i)
+bool lex_match(Parser *p, int64_t i)
 {
     if(lex_last(p) == i) {
         lex_advance(p);
@@ -152,10 +152,10 @@ bool lex_match_digit(Parser *p)
 char *lex_read_literal(Parser *p)
 {
     char *str = 0;
-    i64 str_length = 0;
+    int64_t str_length = 0;
     while(lex_is_literal(p)) {
-        i64 new_length = str_length + 1;
-        i64 last_char_index = str_length;
+        int64_t new_length = str_length + 1;
+        int64_t last_char_index = str_length;
         str = realloc(str, new_length);
         str[last_char_index] = lex_last(p);
         lex_advance(p);
@@ -173,7 +173,7 @@ void lex_literal(Parser *p)
 
     // Try parsing an integer
     errno = 0;
-    i64 ivalue = strtoll(lit, &end, 0);
+    int64_t ivalue = strtoll(lit, &end, 0);
     if(errno == ERANGE) {
         parse_fatal_error(p, "Value %s is too big for an int.", lit);
     }
@@ -184,7 +184,7 @@ void lex_literal(Parser *p)
     }
     // Try parsing a float
     errno = 0;
-    f64 fvalue = strtod(lit, &end);
+    double fvalue = strtod(lit, &end);
     if(errno == ERANGE) {
         parse_fatal_error(p, "Value %s is too big for a float.", lit);
     }
@@ -203,7 +203,7 @@ void lex_literal(Parser *p)
 void lex_str(Parser *p)
 {
     char *str = NULL;
-    i64 str_len = 0;
+    int64_t str_len = 0;
     lex_match(p, '"');
     while(!(lex_is(p, '"') || lex_is_eof(p))) {
         char c = lex_last(p);
@@ -426,7 +426,7 @@ char *read_file(char *filename)
     FILE *file = fopen(filename, "rb");
     if(file == NULL) return NULL;
     fseek(file, 0, SEEK_END);
-    i64 fsize = ftell(file);
+    int64_t fsize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     char *text = malloc(fsize + 1);

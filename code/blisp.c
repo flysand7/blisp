@@ -6,7 +6,7 @@ struct BinFuncDesc {
 };
 
 static BinFuncDesc *bin_func_list = NULL;
-static i64 bin_func_count = 0;
+static int64_t bin_func_count = 0;
 
 static void fatal_error(char *msg, ...)
 {
@@ -30,7 +30,7 @@ static Expr expr_nil()
 
 // Numbers
 
-static Expr expr_int(i64 value)
+static Expr expr_int(int64_t value)
 {
     Expr result;
     kind(result) = EXPR_INTEGER;
@@ -40,7 +40,7 @@ static Expr expr_int(i64 value)
 
 // Floats
 
-static Expr expr_flt(f64 value)
+static Expr expr_flt(double value)
 {
     Expr result;
     kind(result) = EXPR_FLOAT;
@@ -125,15 +125,15 @@ static void list_reverse(Expr *list)
     *list = tail;
 }
 
-static Expr list_ith(Expr list, i64 i)
+static Expr list_ith(Expr list, int i)
 {
-    for(i64 k = 0; k != i; ++k) {
+    for(int k = 0; k != i; ++k) {
         list = cdr(list);
     }
     return car(list);
 }
 
-static void list_set(Expr list, i64 i, Expr value) {
+static void list_set(Expr list, int i, Expr value) {
     while(i--) {
         list = cdr(list);
     }
@@ -197,7 +197,7 @@ static void add_bin_func(Expr env, char *name, Func *func) {
 }
 
 static Intern *bin_func_name(Func *func) {
-    for(i64 i = 0; i != bin_func_count; ++i) {
+    for(int64_t i = 0; i != bin_func_count; ++i) {
         BinFuncDesc desc = bin_func_list[i];
         if(desc.func == func) {
             return desc.name;
