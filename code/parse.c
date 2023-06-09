@@ -439,7 +439,7 @@ char *read_file(char *filename)
 
 static int run_file(Expr env, char *filename, Expr *result)
 {
-    trace_start(filename, strlen(filename));
+    trace_startsn(filename, strlen(filename));
     Parser p;
     char *text = read_file(filename);
     if(text == NULL) {

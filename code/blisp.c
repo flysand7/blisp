@@ -497,13 +497,16 @@ static Expr eval(Expr env, Expr expr)
     Expr result;
     int gc_counter = 0;
     do {
+        trace_starts("Eval cycle");
         if(++gc_counter == 1000000) {
+            trace_starts("GC cycle");
             gc_mark(expr);
             gc_mark(env);
             gc_mark(stack);
             gc_mark(file_stack);
             gc_sweep();
             gc_counter = 0;
+            trace_end();
         }
         // Literals are evaluated to themselves
         if(kind(expr) != EXPR_PAIR && kind(expr) != EXPR_SYMBOL) {
@@ -516,6 +519,7 @@ static Expr eval(Expr env, Expr expr)
             Expr definition;
             bool is_defined = env_lookup(env, expr, &definition);
             if(!is_defined) {
+                trace_end();
                 fatal_error("Symbol '%s' is not defined", val_sym(expr)->data);
             }
             result = definition;
@@ -546,6 +550,7 @@ static Expr eval(Expr env, Expr expr)
                         frame_ev_op(stack) = op;
                         frame_ev_arg(stack) = name;
                         expr = car(exprs);
+                        trace_end();
                         continue;
                     }
                     else if(is_pair(pat)) {
@@ -572,6 +577,7 @@ static Expr eval(Expr env, Expr expr)
                         result = name;
                     }
                     else {
+                        trace_end();
                         fatal_error("Macro can only be a function");
                     }
                 }
@@ -582,13 +588,16 @@ static Expr eval(Expr env, Expr expr)
                     if(!is_nil(cdr(args))) {
                         if(is_nil(car(cdr(args)))) {
                             printf("Error: missing if true clause");
+                            trace_end();
                             exit(1);
                         }
                         else if(is_nil(cdr(cdr(args)))) {
                             printf("Error: missing if false clause");
+                            trace_end();
                             exit(1);
                         }
                     }
+                    trace_end();
                     continue;
                 }
                 else if(sym_is(op, intern_lambda)) {
@@ -608,6 +617,7 @@ static Expr eval(Expr env, Expr expr)
                         file_stack = cons(stack_frame, file_stack);
                         if(!run_file(env, filename, &result)) {
                             printf("[error]: file %s isn't found\n", filename);
+                            trace_end();
                             exit(1);
                         }
                         file_stack = cdr(file_stack);
@@ -618,6 +628,7 @@ static Expr eval(Expr env, Expr expr)
                     stack = make_frame(stack, env, op, cdr(args));
                     frame_ev_op(stack) = op;
                     expr = car(args);
+                    trace_end();
                     continue;
                 }
                 else {
@@ -631,13 +642,16 @@ static Expr eval(Expr env, Expr expr)
 push:
                 stack = make_frame(stack, env, op, args);
                 expr = op;
+                trace_end();
                 continue;
             }
         }
         if(is_nil(stack)) {
+            trace_end();
             break;
         }
         expr = eval_do_return(&stack, &env, &result);
+        trace_end();
     } while(true);
     return result;
 }

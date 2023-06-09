@@ -12,7 +12,7 @@
 #include <signal.h>
 
 #include "blisp.h"
-#include "profiler.c"
+#include "profiler/tracing.c"
 
 #include "intern.c"
 #include "memory.c"
@@ -49,14 +49,7 @@ static void signal_handler(int signal)
 
 int main(int argc, char **argv)
 {
-    spall_ctx = SpallInit("trace.spall", 1);
-    unsigned char *buffer = malloc(1*1024*1024);
-    spall_buffer = (SpallBuffer){
-        .length = 1*1024*1024,
-        .data = buffer,
-    };
-
-    SpallBufferInit(&spall_ctx, &spall_buffer);
+    profiler_init("trace.spall");
 
     signal(SIGABRT, signal_handler);
     signal(SIGFPE, signal_handler);
@@ -106,7 +99,6 @@ int main(int argc, char **argv)
             }
         }
     }
-    SpallBufferQuit(&spall_ctx, &spall_buffer);
-    SpallQuit(&spall_ctx);
+    profiler_exit();
     return 0;
 }
